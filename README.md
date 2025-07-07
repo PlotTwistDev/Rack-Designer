@@ -26,7 +26,7 @@ A versatile web application for designing and visualizing server rack layouts. T
 *   **Theme Switching:** Toggle between light and dark themes.
 
 ## 📁 Project Structure
-
+```
 ├── static/
 │   ├── index.html         # Main HTML template
 │   ├── style.css          # Core styling
@@ -43,7 +43,7 @@ A versatile web application for designing and visualizing server rack layouts. T
 ├── server.py              # Backend server & API definitions
 ├── requirements.txt       # Python dependencies
 └── README.md              # Project documentation
-
+```
 ## 🛠️ Technologies Used
 
 *   **Backend:**
