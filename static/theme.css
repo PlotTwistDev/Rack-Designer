@@ -1,0 +1,202 @@
+/* Light Theme (Default) */
+:root,
+html:not(.dark) {
+    --bg-body: #f1f5f9;
+    /* gray-100 */
+    --bg-panel-main: #ffffff;
+    /* white */
+    --bg-category-panel: #f1f5f9;
+    /* gray-100 */
+    --bg-input: #f1f5f9;
+    /* gray-100 */
+    --bg-item: #ffffff;
+    /* white */
+    --bg-item-hover: #f1f5f9;
+    /* gray-100 */
+    --bg-button: #ffffff;
+    /* Default button background for light theme */
+    --bg-button-hover: #e2e8f0;
+    /* Default button hover for light theme */
+    --bg-button-dark: #1e293b;
+    /* slate-800 */
+    --bg-button-dark-hover: #334155;
+    /* slate-700 */
+
+    --border-color: #e2e8f0;
+    /* gray-200 */
+    --border-color-input: #cbd5e1;
+    /* gray-300 */
+    --border-color-item: #e2e8f0;
+    /* gray-200 */
+
+    --text-color-primary: #1e293b;
+    /* gray-800 */
+    --text-color-secondary: #334155;
+    /* gray-700 */
+    --text-color-muted: #475569;
+    /* gray-600 */
+    --text-color-disabled: #9ca3af;
+    /* gray-400 */
+
+    --accent-color: #3b82f6;
+    /* blue-500 */
+    --accent-color-focus: #60a5fa;
+    /* blue-400 */
+    --accent-color-secondary: #10b981;
+    /* emerald-500 */
+    --accent-color-translucent: rgba(59, 130, 246, 0.2);
+
+
+    --selection-bg: rgba(59, 130, 246, 0.25);
+    --selection-border: rgba(59, 130, 246, 0.7);
+    --selection-highlight: rgba(59, 130, 246, 0.3);
+
+    --scrollbar-track: #f1f5f9;
+    /* gray-100 */
+    --scrollbar-thumb: #94a3b8;
+    /* slate-400 */
+    --scrollbar-thumb-hover: #64748b;
+    /* slate-500 */
+
+    /* Canvas specific */
+    --bg-canvas: linear-gradient(to bottom, #f0f2f5, #ffffff);
+    --rack-rail-color: #BDBDBD;
+    --rack-inner-color: #D6D6D6;
+    --rack-text-color: #555;
+    --rack-line-color: #C5C5C5;
+    --rack-hole-color: #444;
+
+    /* --- MODAL VARIABLES --- */
+    --modal-bg: #ffffff;
+    /* A clean white */
+    --modal-text: #111827;
+    /* Dark gray text */
+    --modal-overlay: rgba(30, 41, 59, 0.7);
+    /* slate-800 with transparency */
+    --modal-textarea-bg: #f8fafc;
+    /* slate-50, slightly off-white */
+    --modal-textarea-border: #cbd5e1;
+    /* slate-300 */
+    --modal-btn-secondary-bg: #e2e8f0;
+    /* slate-200 */
+    --modal-btn-secondary-text: #334155;
+    /* slate-700 */
+    --modal-btn-secondary-hover: #cbd5e1;
+    /* slate-300 */
+
+    /* --- NEW SAVE/LOAD BUTTON VARIABLES --- */
+    --button-save-bg: #22c55e;
+    /* green-500 */
+    --button-save-hover-bg: #16a34a;
+    /* green-600 */
+    --button-save-text: #ffffff;
+    /* White text for green button */
+
+    --button-load-bg: #94a3b8;
+    /* slate-400 (visible gray) */
+    --button-load-hover-bg: #64748b;
+    /* slate-500 */
+    --button-load-text: #ffffff;
+    /* White text for gray button */
+}
+
+/* Dark Theme */
+.dark {
+    --bg-body: #111827;
+    /* gray-900 */
+    --bg-panel-main: #111827;
+    /* gray-900 */
+    --bg-category-panel: #1f2937;
+    /* gray-800 */
+    --bg-input: #374151;
+    /* gray-700 */
+    --bg-item: #374151;
+    /* gray-700 */
+    --bg-item-hover: #4b5563;
+    /* gray-600 */
+    --bg-button: #1f2937;
+    /* Default button background for dark theme */
+    --bg-button-hover: #334155;
+    /* Default button hover for dark theme */
+    --bg-button-dark: #1e293b;
+    /* slate-800 */
+    --bg-button-dark-hover: #334155;
+    /* slate-700 */
+
+    --border-color: #374151;
+    /* gray-700 */
+    --border-color-input: #4b5563;
+    /* gray-600 */
+    --border-color-item: #4b5563;
+    /* gray-600 */
+
+    --text-color-primary: #e5e7eb;
+    /* gray-200 */
+    --text-color-secondary: #d1d5db;
+    /* gray-300 */
+    --text-color-muted: #9ca3af;
+    /* gray-400 */
+    --text-color-disabled: #6b7280;
+    /* gray-500 */
+
+    --accent-color: #2563eb;
+    /* blue-600 */
+    --accent-color-focus: #3b82f6;
+    /* blue-500 */
+    --accent-color-secondary: #059669;
+    /* emerald-600 */
+    --accent-color-translucent: rgba(37, 99, 235, 0.2);
+
+
+    --selection-bg: rgba(37, 99, 235, 0.25);
+    --selection-border: rgba(37, 99, 235, 0.7);
+    --selection-highlight: rgba(37, 99, 235, 0.3);
+
+    --scrollbar-track: #1f2937;
+    /* gray-800 */
+    --scrollbar-thumb: #4b5563;
+    /* gray-600 */
+    --scrollbar-thumb-hover: #6b7280;
+    /* gray-500 */
+
+    /* Canvas specific */
+    --bg-canvas: linear-gradient(to bottom, #25282c, #1e1e1e);
+    --rack-rail-color: #4a4a4a;
+    --rack-inner-color: #383838;
+    --rack-text-color: #a0a0a0;
+    --rack-line-color: #4f4f4f;
+    --rack-hole-color: #2f2f2f;
+
+    /* --- MODAL VARIABLES --- */
+    --modal-bg: #2d3748;
+    /* A nice, medium-dark gray (gray-800 from Tailwind) */
+    --modal-text: #e5e7eb;
+    /* Light gray text (gray-200) */
+    --modal-overlay: rgba(10, 10, 20, 0.75);
+    /* Darker overlay */
+    --modal-textarea-bg: #1f2937;
+    /* Even darker input (gray-900) */
+    --modal-textarea-border: #4b5563;
+    /* gray-600 */
+    --modal-btn-secondary-bg: #4b5563;
+    /* gray-600 */
+    --modal-btn-secondary-text: #e5e7eb;
+    /* gray-200 */
+    --modal-btn-secondary-hover: #6b7280;
+    /* gray-500 */
+
+    /* --- NEW SAVE/LOAD BUTTON VARIABLES --- */
+    --button-save-bg: #10b981;
+    /* emerald-600 */
+    --button-save-hover-bg: #059669;
+    /* emerald-700 */
+    --button-save-text: #ffffff;
+    /* White text for green button */
+
+    --button-load-bg: #4b5563;
+    /* gray-700 */
+    --button-load-hover-bg: #6b7280;
+    /* gray-600 */
+    --button-load-text: #e5e7eb;
+    /* gray-200 */
+}

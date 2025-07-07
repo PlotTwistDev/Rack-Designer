@@ -1,0 +1,1103 @@
+/* --- START OF FILE style.css --- */
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-body);
+    color: var(--text-color-primary);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    display: flex;
+}
+
+/* --- Sidebar --- */
+#left-panel {
+    width: 24rem;
+    /* w-96 */
+    background: var(--bg-panel-main);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+/* Search Area */
+#equipment-filter {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#equip-search {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    background-color: var(--bg-input);
+    color: var(--text-color-primary);
+    font-size: 0.9rem;
+    /* NEW: Add box-sizing: border-box; for correct width calculation with padding */
+    box-sizing: border-box;
+    /* ADDED */
+}
+
+#equip-search:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-color-focus);
+}
+
+/* Equipment List */
+#equipment-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+#equipment-list-container>details+details {
+    margin-top: 0.75rem;
+    /* space-y-3 */
+}
+
+/* Equipment Category Panel */
+details.sidebar-panel {
+    background: var(--bg-category-panel);
+    border-radius: 0.5rem;
+    /* rounded-lg */
+}
+
+details.sidebar-panel summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+details.sidebar-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+details.sidebar-panel .arrow {
+    width: 1rem;
+    height: 1rem;
+    transition: transform 0.2s;
+}
+
+details[open]>summary .arrow {
+    transform: rotate(180deg);
+}
+
+.tool-category-items {
+    padding: 0 0.75rem 0.75rem;
+}
+
+.tool-category-items>.tool-item+.tool-item {
+    margin-top: 0.5rem;
+    /* space-y-2 */
+}
+
+.tool-item {
+    background: var(--bg-item);
+    border: 1px solid var(--border-color-item);
+    border-radius: 0.375rem;
+    /* rounded-md */
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color-primary);
+    cursor: grab;
+    transition: background-color 0.15s;
+}
+
+.tool-item:hover {
+    background-color: var(--bg-item-hover);
+}
+
+/* --- Actions Footer --- */
+#actions-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+#actions-footer>*+* {
+    margin-top: 1rem;
+    /* space-y-4 */
+}
+
+.action-label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-color-muted);
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+select,
+button {
+    margin-top: 0.25rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color-input);
+    border-radius: 0.375rem;
+    /* rounded-md */
+    /* Changed this to use theme variables consistently */
+    background: var(--bg-button);
+    /* New variable for general button background */
+    color: var(--text-color-primary);
+    /* Default text color for buttons */
+    font-size: 0.875rem;
+    transition: background-color 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+
+select:focus,
+button:focus {
+    /* Added button to focus selector for consistency */
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-color-focus);
+    border-color: var(--accent-color-focus);
+}
+
+button:hover {
+    background-color: var(--bg-button-hover);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bg-button-disabled, #ccc);
+    /* Added disabled background */
+    color: var(--text-color-disabled, #666);
+    /* Added disabled text color */
+}
+
+
+#zoom-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+#zoom-controls button.active,
+#view-toggle-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+#view-toggle-btn.active {
+    background-color: var(--accent-color-secondary);
+    border-color: var(--accent-color-secondary);
+}
+
+/* REMOVED: #theme-switcher-btn styling from here */
+
+
+.theme-light-icon {
+    display: none;
+}
+
+/* Hidden in light mode */
+.dark .theme-light-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dark .theme-dark-icon {
+    display: none;
+}
+
+.theme-dark-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Visible in light mode */
+
+
+.action-button-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-button-group button {
+    flex: 1;
+    margin-top: 0;
+    /* Override default button margin-top for grouped buttons */
+}
+
+/* For buttons that aren't part of a group but still in footer */
+/* MODIFIED: Removed margin-top for this rule, as grouped buttons handle it differently */
+.action-button-group-single {
+    width: 100%;
+}
+
+.action-button-group-single button {
+    margin-top: 0.25rem;
+    /* Re-add margin-top specifically for single buttons */
+}
+
+
+/* Use specific IDs for save/load buttons and their new variables */
+#save-layout-btn {
+    /* Renamed from save-layout-btn (was quick save) */
+    background-color: var(--button-save-bg);
+    color: var(--button-save-text);
+}
+
+#save-layout-btn:hover {
+    background-color: var(--button-save-hover-bg);
+}
+
+#load-layout-btn {
+    /* Renamed from load-existing-btn */
+    background-color: var(--button-load-bg);
+    color: var(--button-load-text);
+}
+
+#load-layout-btn:hover {
+    background-color: var(--button-load-hover-bg);
+}
+
+#reset-new-btn {
+    /* NEW */
+    background-color: var(--bg-button-dark);
+    /* Using dark theme button style */
+    color: white;
+}
+
+#reset-new-btn:hover {
+    background-color: var(--bg-button-dark-hover);
+}
+
+
+/* --- Main Content --- */
+
+
+#rackCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-canvas);
+}
+
+#rackCanvas.panning {
+    cursor: grabbing;
+}
+
+/* --- Context Menu --- */
+.context-menu {
+    display: none;
+    position: absolute;
+    background-color: var(--bg-panel-main);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.25rem 0;
+    z-index: 1000;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    font-size: 0.875rem;
+}
+
+.context-menu ul,
+.context-menu li {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu li {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    color: var(--text-color-primary);
+}
+
+.context-menu li:not(.disabled):hover {
+    background-color: var(--bg-item-hover);
+}
+
+.context-menu li.disabled {
+    color: var(--text-color-disabled);
+    cursor: not-allowed;
+    background-color: transparent;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.context-menu hr {
+    margin: 0.25rem 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+/* --- Custom Scrollbar --- */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+#equipment-list-container {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Add these new styles at the end of the file */
+/* --- Rack Controls --- */
+#rack-controls {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-panel-main);
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+/* NEW: Styling for theme switcher within rack controls */
+#rack-controls #theme-switcher-btn {
+    width: auto;
+    /* Allow button to size naturally */
+    margin-left: 1rem;
+    /* Add some space from other buttons */
+    margin-top: 0;
+    /* Override default button margin-top */
+    padding: 0.5rem 0.75rem;
+    /* Standard button padding */
+    font-size: 0.875rem;
+    /* Standard font size */
+    background-color: var(--bg-button-dark);
+    color: white;
+}
+
+#rack-controls #theme-switcher-btn:hover {
+    background-color: var(--bg-button-dark-hover);
+}
+
+#rack-controls button {
+    width: auto;
+    padding: 0.5rem;
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    font-weight: 600;
+}
+
+#rack-controls #add-rack-btn {
+    background-color: var(--accent-color-secondary);
+    color: white;
+    border-color: var(--accent-color-secondary);
+}
+
+#rack-controls #add-rack-btn:hover {
+    filter: brightness(1.1);
+}
+
+#rack-controls #delete-rack-btn {
+    color: #ef4444;
+}
+
+#rack-controls #delete-rack-btn:hover {
+    background-color: #fee2e2;
+}
+
+.dark #rack-controls #delete-rack-btn:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
+#rack-name-display {
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    padding: 0 0.5rem;
+    min-width: 5rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 5rem;
+    /* Ensure it doesn't collapse too much */
+    max-width: 8rem;
+    /* Prevent it from getting too wide */
+    transition: all 0.2s ease;
+    /* Smooth transition for focus */
+}
+
+#actions-footer>*+* {
+    margin-top: 1rem;
+}
+
+/* --- Modal Styles --- */
+
+/* The dark overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-overlay);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.modal-overlay:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* The modal window itself */
+.modal-content {
+    background-color: var(--modal-bg);
+    color: var(--modal-text);
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.modal-overlay:not(.hidden) .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: inherit;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+#notes-textarea {
+    width: 100%;
+    min-height: 150px;
+    resize: vertical;
+    border: 1px solid var(--modal-textarea-border);
+    background-color: var(--modal-textarea-bg);
+    color: var(--modal-text);
+    border-radius: 8px;
+    /* NEW: Adjusted padding for better horizontal spacing */
+    padding: 12px 20px;
+    /* MODIFIED: Increased horizontal padding */
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    /* ADDED: Ensure padding is included in width */
+}
+
+#notes-textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-color-translucent);
+}
+
+.modal-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Base styles for the modal's buttons */
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Style for the secondary "Cancel" button */
+.modal-actions .btn-secondary {
+    background-color: var(--modal-btn-secondary-bg);
+    color: var(--modal-btn-secondary-text);
+}
+
+.modal-actions .btn-secondary:hover {
+    background-color: var(--modal-btn-secondary-hover);
+}
+
+/* Style for the primary "Save" button */
+.modal-actions .btn-primary {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+.modal-actions .btn-primary:hover {
+    filter: brightness(0.9);
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+.info-panel-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-color-secondary);
+}
+
+#info-panel-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.no-selection-message {
+    color: var(--text-color-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+/* Style for individual item info sections */
+.item-info-section {
+    background: var(--bg-category-panel);
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.item-info-section summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+details.sidebar-panel summary::-webkit-details-marker,
+.item-info-section summary::-webkit-details-marker {
+    display: none;
+}
+
+details.sidebar-panel .arrow,
+.item-info-section .arrow {
+    width: 1rem;
+    height: 1rem;
+    transition: transform 0.2s;
+}
+
+details[open]>summary .arrow,
+.item-info-section[open]>summary .arrow {
+    transform: rotate(180deg);
+}
+
+.item-details-content {
+    padding: 0 1rem 1rem;
+    font-size: 0.875rem;
+}
+
+.item-details-content div {
+    margin-bottom: 0.5rem;
+}
+
+.item-details-content label {
+    display: block;
+    font-weight: 500;
+    color: var(--text-color-muted);
+    margin-bottom: 0.25rem;
+}
+
+.item-details-content input[type="text"] {
+    width: 100%;
+    /* NEW: Adjusted padding for better horizontal spacing */
+    padding: 0.5rem 0.75rem;
+    /* Existing, but adding box-sizing */
+    border: 1px solid var(--border-color-input);
+    border-radius: 0.375rem;
+    background-color: var(--bg-input);
+    color: var(--text-color-primary);
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    /* ADDED: Ensure padding is included in width */
+}
+
+.item-details-content input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-color-focus);
+    border-color: var(--accent-color-focus);
+}
+
+.item-details-content .detail-value {
+    color: var(--text-color-primary);
+    padding: 0.5rem 0;
+}
+
+.item-details-content .item-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.item-details-content .item-actions button {
+    margin-top: 0;
+    font-size: 0.8rem;
+    padding: 0.6rem 0.75rem;
+}
+
+/* Specific button styles within item-details */
+.item-details-content .item-actions .edit-notes-btn {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.item-details-content .item-actions .edit-notes-btn:hover {
+    filter: brightness(0.9);
+}
+
+.item-details-content .item-actions .delete-item-btn {
+    background-color: #ef4444;
+    color: white;
+}
+
+.item-details-content .item-actions .delete-item-btn:hover {
+    background-color: #dc2626;
+}
+
+/* Dark mode specific for delete button hover */
+.dark .item-details-content .item-actions .delete-item-btn:hover {
+    background-color: #b91c1c;
+}
+
+
+/* ───────────────────────────────────────────── */
+/* Right Info Panel (slide via flex-basis)     */
+/* ───────────────────────────────────────────── */
+
+/* 1) Container becomes a flex row, clipping overflow */
+#right-panel {
+    flex: 1;
+    display: flex;
+    padding: 1rem;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 2) Main canvas grows and shrinks */
+#canvas-container {
+    flex: 1 1 auto;
+    position: relative;
+    /* ADDED: This is crucial for absolute positioning of on-canvas elements */
+}
+
+/* Panel sits off-screen to the right by default */
+#right-info-panel {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 24rem;
+    background: var(--bg-panel-main);
+    border-left: 1px solid var(--border-color);
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+}
+
+/* Bring it into view when *not* collapsed */
+#right-info-panel:not(.collapsed) {
+    transform: translateX(0);
+}
+
+#right-info-panel:not(.collapsed)~#rack-controls {
+    right: calc(1.5rem + 24rem + 1rem);
+}
+
+
+/* “Show Info” sits on the very right when panel is CLOSED */
+#show-info-btn {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+
+    width: auto;
+    height: auto;
+    padding: 1.5rem 0.6rem;
+    border-radius: 0.5rem 0 0 0.5rem;
+
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0.75rem;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+}
+
+#show-info-btn:hover {
+    background-color: var(--accent-color-focus);
+    box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.15), 0 3px 5px -3px rgba(0, 0, 0, 0.15);
+}
+
+
+#right-info-panel:not(.collapsed)~#show-info-btn {
+    display: none;
+}
+
+#right-info-panel.collapsed+#show-info-btn {
+    display: block;
+}
+
+#right-info-panel:not(.collapsed)+#show-info-btn {
+    display: none;
+}
+
+/* “Hide Info” sits on the left edge of the panel when it’s OPEN */
+#hide-info-btn {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-100%);
+
+    width: auto;
+    height: auto;
+    padding: 1.5rem 0.6rem;
+    border-radius: 0.5rem 0 0 0.5rem;
+
+    background: var(--accent-color);
+    color: white;
+    border: none;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0.75rem;
+    cursor: pointer;
+    z-index: 1001;
+
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#hide-info-btn:hover {
+    background-color: var(--accent-color-focus);
+    box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.15), 0 3px 5px -3px rgba(0, 0, 0, 0.15);
+}
+
+#right-info-panel:not(.collapsed) #hide-info-btn {
+    display: flex;
+}
+
+#right-info-panel:not(.collapsed)+#show-info-btn {
+    display: none;
+}
+
+/* NEW Modal Specific Styles */
+
+/* Input fields within modals */
+.modal-content input[type="text"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--modal-textarea-border);
+    background-color: var(--modal-textarea-bg);
+    color: var(--modal-text);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    /* NEW: Adjusted padding for better horizontal spacing */
+    padding: 0.75rem 1.25rem;
+    /* MODIFIED: Increased horizontal padding */
+    box-sizing: border-box;
+    /* ADDED: Ensure padding is included in width */
+}
+
+.modal-content input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-color-translucent);
+}
+
+/* Load File List */
+#load-file-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background-color: var(--bg-input);
+}
+
+#load-file-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#load-file-list li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color-item);
+    color: var(--text-color-primary);
+    transition: background-color 0.15s;
+}
+
+#load-file-list li:last-child {
+    border-bottom: none;
+}
+
+#load-file-list li:hover {
+    background-color: var(--bg-item-hover);
+}
+
+/* *** MODIFIED/ENHANCED STYLES FOR SELECTED ITEM IN LOAD MODAL *** */
+#load-file-list li.selected {
+    background-color: var(--accent-color, #2196f3);
+    /* Use a strong accent color */
+    color: white;
+    /* Ensure text is visible on the accent background */
+    font-weight: 600;
+    /* Make selected text bold */
+    border-left: 4px solid var(--accent-color-focus, #1976d2);
+    /* Add a strong left border */
+    padding-left: calc(1rem - 4px);
+    /* Adjust padding */
+    box-shadow: inset 0 0 0 2px var(--accent-color-focus);
+    /* Subtle inner shadow */
+}
+
+/* Ensure hover doesn't override selection visually */
+#load-file-list li.selected:hover {
+    background-color: var(--accent-color-hover, #1976d2);
+    /* Slightly darker accent on hover */
+    color: white;
+    /* Keep text white on hover */
+}
+
+/* *** END MODIFIED/ENHANCED STYLES *** */
+
+
+/* New style for the currently loaded file in the list */
+#load-file-list li.current-file {
+    font-weight: 600;
+    /* Make it bold */
+    border-left: 4px solid var(--accent-color);
+    /* Add a subtle left border */
+    padding-left: calc(1rem - 4px);
+    /* Adjust padding to keep alignment */
+}
+
+
+/* Message for no files found */
+.no-files-message {
+    text-align: center;
+    padding: 1rem;
+    color: var(--text-color-muted);
+    font-style: italic;
+}
+
+/* Add to .action-button-group styling */
+#export-pdf-btn,
+#export-image-btn {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+#export-pdf-btn:hover,
+#export-image-btn:hover {
+    background-color: var(--accent-color-focus);
+}
+
+
+/* Styling for the new rack name input */
+#rack-name-display.rack-name-input {
+    background-color: transparent;
+    /* Make it blend with parent */
+    border: 1px solid transparent;
+    /* No border by default */
+    border-radius: 0.25rem;
+    /* Slightly rounded corners */
+    color: var(--text-color-secondary);
+    /* Match original text color */
+    font-weight: 600;
+    /* Match original font weight */
+    padding: 0.25rem 0.5rem;
+    /* Small padding */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 5rem;
+    /* Ensure it doesn't collapse too much */
+    max-width: 8rem;
+    /* Prevent it from getting too wide */
+    transition: all 0.2s ease;
+    /* Smooth transition for focus */
+}
+
+#rack-name-display.rack-name-input:hover {
+    background-color: var(--bg-item-hover);
+    /* Indicate interactivity on hover */
+    border-color: var(--border-color-input);
+}
+
+#rack-name-display.rack-name-input:focus {
+    background-color: var(--bg-input);
+    /* Input background when focused */
+    border-color: var(--accent-color-focus);
+    /* Accent color border on focus */
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-color-focus);
+    /* Focus ring */
+}
+
+/* Ensure the input is hidden/shown correctly with rack controls */
+#rack-controls #rack-name-display.rack-name-input {
+    margin: 0;
+    /* Override default button margin if any */
+    /* Other styles are already set above */
+}
+
+/* Base style for delete buttons */
+.delete-item-btn {
+    background-color: var(--danger-color, #dc3545);
+    /* Example danger color */
+    color: white;
+    border: none;
+    /* Removed fixed padding/font-size here to let .small-right-button define them */
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.delete-item-btn:hover {
+    background-color: var(--danger-color-hover, #c82333);
+    /* Darker on hover */
+}
+
+/* This is the crucial part for making it small and fit content */
+.small-right-button {
+    padding: 3rem 0.6rem;
+    /* Smaller padding */
+    font-size: 0.8rem;
+    /* Smaller font size */
+    width: fit-content;
+    /* <--- THIS IS THE KEY CHANGE */
+    white-space: nowrap;
+    /* Prevents text from wrapping if button is too small */
+    flex-grow: 0;
+    /* IMPORANT: Prevent it from growing */
+    flex-shrink: 0;
+    /* Prevent it from shrinking */
+    flex-basis: auto;
+    /* Let content determine initial size */
+}
+
+/* Ensure the parent container uses flexbox and aligns items to the right */
+.item-actions {
+    display: flex;
+    justify-content: flex-end;
+    /* Aligns contents (the button) to the right */
+    align-items: right;
+    /* Vertically centers items if there were others */
+    gap: 0.5rem;
+    /* Adds space between multiple buttons if you add more later */
+}
+
+
+/* NEW: Style for the dynamically created rack name input on canvas */
+.canvas-rack-name-editor {
+    /* Basic appearance to match canvas text */
+    background-color: var(--bg-input);
+    /* Or rgba(255,255,255,0.9) to float over */
+    color: var(--text-color-primary);
+    border: 1px solid var(--accent-color);
+    border-radius: 0.25rem;
+    font-family: 'sans-serif';
+    /* Ensure it uses a generic font so it matches canvas */
+    font-weight: bold;
+    box-sizing: border-box;
+    /* Include padding and border in element's total width and height */
+
+    /* Center text within its box */
+    text-align: center;
+
+    /* Remove default browser outlines */
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-color-focus);
+    /* Highlight on focus */
+
+    /* Prevent user drag/select from input element itself */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+
+    /* Make sure it's visible even with low opacity states */
+    opacity: 1 !important;
+}
+
+/* Optional: adjust appearance for dark mode */
+.dark .canvas-rack-name-editor {
+    /* Adjust colors for dark theme if needed */
+}

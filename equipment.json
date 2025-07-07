@@ -1,0 +1,286 @@
+[
+    {
+        "category": "Servers & Compute",
+        "items": [
+            {
+                "label": "1U Server",
+                "u": 1,
+                "type": "server",
+                "stencil": "server-1u",
+                "stencil_rear": "server-1u-rear"
+            },
+            {
+                "label": "2U Server",
+                "u": 2,
+                "type": "server",
+                "stencil": "server-2u",
+                "stencil_rear": "server-2u-rear"
+            },
+            {
+                "label": "1U Render Node",
+                "u": 1,
+                "type": "render",
+                "stencil": "server-1u",
+                "stencil_rear": "server-1u-rear"
+            },
+            {
+                "label": "2U Render Node",
+                "u": 2,
+                "type": "render",
+                "stencil": "server-2u",
+                "stencil_rear": "server-2u-rear"
+            },
+            {
+                "label": "4U AI/GPU Server",
+                "u": 4,
+                "type": "server",
+                "stencil": "server-4u-gpu",
+                "stencil_rear": "server-4u-gpu-rear"
+            }
+        ]
+    },
+    {
+        "category": "Storage",
+        "items": [
+            {
+                "label": "2U NAS/SAN",
+                "u": 2,
+                "type": "storage",
+                "stencil": "storage-2u",
+                "stencil_rear": "storage-2u-rear"
+            },
+            {
+                "label": "4U 24-Bay Array",
+                "u": 4,
+                "type": "storage",
+                "stencil": "storage-4u-24bay",
+                "stencil_rear": "storage-4u-24bay-rear"
+            },
+            {
+                "label": "2U NAS Expansion Unit",
+                "u": 2,
+                "type": "storage",
+                "stencil": "nas-expansion-2u",
+                "stencil_rear": "nas-expansion-2u-rear"
+            },
+            {
+                "label": "1U Tape Library",
+                "u": 1,
+                "type": "storage",
+                "stencil": "tape-library-1u",
+                "stencil_rear": "tape-library-1u-rear"
+            },
+            {
+                "label": "2U Tape Library",
+                "u": 2,
+                "type": "storage",
+                "stencil": "tape-library-2u",
+                "stencil_rear": "tape-library-2u-rear"
+            },
+            {
+                "label": "4U Tape Library",
+                "u": 4,
+                "type": "storage",
+                "stencil": "tape-library-4u",
+                "stencil_rear": "tape-library-4u-rear"
+            }
+        ]
+    },
+    {
+        "category": "Networking",
+        "items": [
+            {
+                "label": "1U 24-Port Switch",
+                "u": 1,
+                "type": "switch",
+                "stencil": "switch-1u-24p",
+                "stencil_rear": "switch-1u-24p-rear"
+            },
+            {
+                "label": "2U 48-Port Switch",
+                "u": 2,
+                "type": "switch",
+                "stencil": "switch-2u-48p",
+                "stencil_rear": "switch-1u-24p-rear"
+            },
+            {
+                "label": "1U Patch Panel",
+                "u": 1,
+                "type": "blank",
+                "stencil": "patch-panel-1u",
+                "stencil_rear": "patch-panel-1u-rear"
+            }
+        ]
+    },
+    {
+        "category": "Workstations",
+        "items": [
+            {
+                "label": "4U Workstation",
+                "u": 4,
+                "type": "workstation",
+                "stencil": "workstation-4u",
+                "stencil_rear": "workstation-4u-rear"
+            }
+        ]
+    },
+    {
+        "category": "Displays & KVM",
+        "items": [
+            {
+                "label": "1U KVM Drawer",
+                "u": 1,
+                "type": "kvm",
+                "stencil": "kvm-drawer-1u",
+                "stencil_rear": "kvm-drawer-1u-rear"
+            },
+            {
+                "label": "1U 16-Port KVM",
+                "u": 1,
+                "type": "kvm",
+                "stencil": "kvm-switch-1u",
+                "stencil_rear": "kvm-switch-1u-rear"
+            },
+            {
+                "label": "8U Monitor",
+                "u": 8,
+                "type": "monitor",
+                "stencil": "monitor-8u",
+                "stencil_rear": "monitor-8u-rear"
+            },
+            {
+                "label": "12U Monitor",
+                "u": 12,
+                "type": "monitor",
+                "stencil": "monitor-12u",
+                "stencil_rear": "monitor-12u-rear"
+            }
+        ]
+    },
+    {
+        "category": "Power",
+        "items": [
+            {
+                "label": "1U PDU",
+                "u": 1,
+                "type": "blank",
+                "stencil": "pdu-1u",
+                "stencil_rear": "pdu-1u-rear"
+            },
+            {
+                "label": "2U UPS",
+                "u": 2,
+                "type": "ups",
+                "stencil": "ups-2u",
+                "stencil_rear": "ups-2u-rear"
+            },
+            {
+                "label": "3U UPS",
+                "u": 3,
+                "type": "ups",
+                "stencil": "ups-2u",
+                "stencil_rear": "ups-2u-rear"
+            },
+            {
+                "label": "4U UPS",
+                "u": 4,
+                "type": "ups",
+                "stencil": "ups-2u",
+                "stencil_rear": "ups-2u-rear"
+            }
+        ]
+    },
+    {
+        "category": "Vertical PDUs",
+        "items": [
+            {
+                "label": "42U Vertical PDU",
+                "u": 0,
+                "type": "v-pdu",
+                "stencil": "v-pdu-front",
+                "stencil_rear": "v-pdu-rear"
+            }
+        ]
+    },
+    {
+        "category": "Shelf Items",
+        "items": [
+            {
+                "label": "Small Router/Hub",
+                "u": 0,
+                "type": "shelf-item",
+                "stencil": "shelf-item-router",
+                "stencil_rear": "shelf-item-router-rear",
+                "size": {
+                    "width": 80,
+                    "height": 30
+                }
+            },
+            {
+                "label": "3.5\" HDD Dock",
+                "u": 0,
+                "type": "shelf-item",
+                "stencil": "shelf-item-hdd-dock",
+                "stencil_rear": "shelf-item-hdd-dock-rear",
+                "size": {
+                    "width": 50,
+                    "height": 60
+                }
+            }
+        ]
+    },
+    {
+        "category": "Blanking Panels",
+        "items": [
+            {
+                "label": "1U Blank Panel",
+                "u": 1,
+                "type": "blank",
+                "stencil": "blank-1u",
+                "stencil_rear": "blank-1u-rear"
+            },
+            {
+                "label": "2U Blank Panel",
+                "u": 2,
+                "type": "blank",
+                "stencil": "blank-2u",
+                "stencil_rear": "blank-2u-rear"
+            },
+            {
+                "label": "4U Blank Panel",
+                "u": 4,
+                "type": "blank",
+                "stencil": "blank-4u",
+                "stencil_rear": "blank-4u-rear"
+            },
+            {
+                "label": "6U Blank Panel",
+                "u": 6,
+                "type": "blank",
+                "stencil": "blank-6u",
+                "stencil_rear": "blank-6u-rear"
+            },
+            {
+                "label": "8U Blank Panel",
+                "u": 8,
+                "type": "blank",
+                "stencil": "blank-8u",
+                "stencil_rear": "blank-8u-rear"
+            },
+            {
+                "label": "10U Blank Panel",
+                "u": 10,
+                "type": "blank",
+                "stencil": "blank-10u",
+                "stencil_rear": "blank-10u-rear"
+            },
+            {
+                "label": "12U Blank Panel",
+                "u": 12,
+                "type": "blank",
+                "stencil": "blank-12u",
+                "stencil_rear": "blank-12u-rear"
+            }
+        ]
+    }
+]

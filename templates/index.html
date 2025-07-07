@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rack Designer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside id="left-panel">
+        <div id="equipment-filter">
+            <input type="text" id="equip-search" placeholder="🔍 Search equipment..." />
+        </div>
+        <nav id="equipment-list-container"></nav>
+        <div id="actions-footer">
+            <div class="action-grid">
+                <div>
+                    <label for="rackSizeSelect" class="action-label">Size</label>
+                    <select id="rackSizeSelect">
+                        <option value="24">24U</option>
+                        <option value="42" selected>42U</option>
+                        <option value="48">48U</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="action-label">View</label>
+                    <button id="view-toggle-btn">Show Rear</button>
+                </div>
+            </div>
+            <div>
+                <label class="action-label">Zoom</label>
+                <div id="zoom-controls">
+                    <button id="zoom-fit" class="active">Fit</button>
+                    <button id="zoom-0.5x">0.5x</button>
+                    <button id="zoom-1x">1x</button>
+                    <button id="zoom-2x">2x</button>
+                </div>
+            </div>
+            <!-- NEW/UPDATED: Save/Load/Reset Buttons -->
+            <div class="action-button-group">
+                <button id="save-layout-btn">Save</button>
+                <button id="load-layout-btn">Load</button>
+            </div>
+            <div class="action-button-group-single">
+                <button id="reset-new-btn">Reset / New</button>
+            </div>
+            <!---------------------------------->
+            <div class="action-section">
+                <label class="action-label">Export Layout</label>
+                <div class="action-button-group">
+                    <button id="export-pdf-btn">Export to PDF</button>
+                    <button id="export-image-btn">Export to Image</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="right-panel">
+        <div id="canvas-container">
+            <canvas id="rackCanvas" tabindex="0"></canvas>
+        </div>
+        <!-- NEW: Info Panel (Right Sidebar) -->
+        <aside id="right-info-panel" class="collapsed">
+            <button id="hide-info-btn" class="info-toggle-btn">Hide Info ></button>
+            <div class="info-panel-header">
+                <h3>Selected Equipment Details</h3>
+            </div>
+            <div id="info-panel-content" class="custom-scrollbar">
+                <p class="no-selection-message">
+                    Select an item on the canvas to see its details.
+                </p>
+            </div>
+        </aside>
+        <!-- show-info: only visible when panel is collapsed -->
+        <button id="show-info-btn" class="info-toggle-btn">
+            < Show Info</button>
+
+                <div id="rack-controls">
+                    <button id="prev-rack-btn" title="Previous Rack">◀</button>
+                    <input type="text" id="rack-name-display" class="rack-name-input" value="Rack 1"
+                        title="Current Rack">
+                    <button id="next-rack-btn" title="Next Rack">▶</button>
+                    <button id="toggle-layout-view-btn" title="Show All Racks">🔲</button>
+                    <button id="delete-rack-btn" title="Delete Current Rack">🗑️</button>
+                    <button id="add-rack-btn" title="Add New Rack">+</button>
+                    <!-- NEW LOCATION FOR THEME SWITCHER -->
+                    <button id="theme-switcher-btn" class="utility-button">
+                        <span class="theme-light-icon">☀️</span>
+                        <span class="theme-dark-icon">🌙</span>
+                    </button>
+                </div>
+    </main>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu">
+        <ul>
+            <li data-action="edit-notes">Edit Notes...</li>
+            <hr>
+            <li data-action="fill-blanks">Fill with Blanking Plates</li>
+            <hr>
+            <li data-action="duplicate-up" data-count="1">Duplicate Up x1</li>
+            <li data-action="duplicate-up" data-count="2">Duplicate Up x2</li>
+            <li data-action="duplicate-up" data-count="3">Duplicate Up x3</li>
+            <hr>
+            <li data-action="duplicate-down" data-count="1">Duplicate Down x1</li>
+            <li data-action="duplicate-down" data-count="2">Duplicate Down x2</li>
+            <li data-action="duplicate-down" data-count="3">Duplicate Down x3</li>
+        </ul>
+    </div>
+
+    <!-- Notes Editor Modal -->
+    <div id="notes-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Edit Notes</h3>
+            <textarea id="notes-textarea" class="custom-scrollbar" placeholder="Enter notes for the item..."></textarea>
+            <div class="modal-actions">
+                <button id="notes-cancel-btn" class="btn btn-secondary">Cancel</button>
+                <button id="notes-save-btn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Save As Modal (Reused for initial "Save") -->
+    <div id="save-as-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Save Layout As</h3>
+            <input type="text" id="save-as-filename" placeholder="Enter filename (e.g., MyRackLayout)">
+            <div class="modal-actions">
+                <button id="save-as-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="save-as-save-btn" class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Load Existing Modal -->
+    <div id="load-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Load Existing Layout</h3>
+            <div id="load-file-list" class="custom-scrollbar">
+                <!-- Files will be dynamically loaded here -->
+                <p class="no-files-message">Loading layouts...</p>
+            </div>
+            <div class="modal-actions">
+                <button id="load-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="delete-selected-btn" class="btn-secondary">Delete</button>
+                <button id="load-selected-btn" class="btn-primary" disabled>Load</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load jsPDF library for PDF export -->
+    <!-- REMOVED integrity and crossorigin due to SRI mismatch errors during local development -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Load main.js as a module -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" type="module" defer></script>
+</body>
+
+</html>

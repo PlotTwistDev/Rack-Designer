@@ -1,0 +1,1234 @@
+// --- START OF FILE events.js ---
+
+
+import { canvas, drawRack } from './canvas.js';
+import * as constants from './constants.js';
+import { getNoteDrawingMetrics } from './renderer.js'; // Import the new function
+import * as state from './state.js';
+import * as ui from './ui.js'; // Make sure ui is imported
+import * as utils from './utils.js';
+
+let hasInitializedEvents = false;
+
+/**
+ * Handles the mouse down event on the canvas.
+ * @param {MouseEvent} e The mouse down event object.
+ */
+const handleMouseDown = (e) => {
+    // If a rack name is being edited on the canvas, prevent other canvas interactions.
+    if (state.editingRackName) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+
+    // NEW: if we clicked anywhere in the info-panel, skip all canvas logic
+    if (e.target.closest('#right-info-panel')) {
+        return;
+    }
+
+    ui.hideContextMenu();
+
+    // NEW: Shift + Left Click for panning
+    if (e.button === 0 && e.shiftKey) {
+        e.preventDefault(); // Prevent default browser actions for Shift+click
+        state.setIsPanning(true);
+        canvas.classList.add('panning');
+        state.setPanStart({ x: e.clientX, y: e.clientY });
+        return; // Important: return immediately if panning
+    }
+
+    // Original middle mouse button panning (keep as an alternative if a mouse is connected)
+    if (e.button === 1) { // Middle mouse for panning
+        e.preventDefault();
+        state.setIsPanning(true);
+        canvas.classList.add('panning');
+        state.setPanStart({ x: e.clientX, y: e.clientY });
+        return; // Important: return immediately if panning
+    }
+
+    if (e.button !== 0) return; // Only left-click (and not Shift+Left Click)
+
+    const worldPos = utils.getMouseWorldPos(e);
+
+    // NEW: Check for note click first (only in single-rack view where notes are drawn interactively)
+    if (!state.isMultiRackView && state.activeRackIndex > -1) {
+        const activeRackData = state.racks[state.activeRackIndex];
+        const actualRackXOffset = 0; // In single rack view, the active rack is drawn at world X=0
+        const estimatedNoteFontSize = Math.max(9, Math.min(16, constants.BASE_UNIT_HEIGHT * 0.35)); // Use a reasonable estimate for hit testing
+
+        // Function to check notes for an item (main or shelf)
+        const checkItemNotes = (item, parentItem = null) => {
+            if (!item.notes || item.notes.trim() === '') return false;
+
+            let itemRect; // Bounding box of the *equipment item* itself
+            if (item.type === 'shelf-item') {
+                const parentTopY = parentItem.y * constants.BASE_UNIT_HEIGHT;
+                const drawW = item.size.width * constants.SHELF_ITEM_RENDER_SCALE;
+                const drawH = item.size.height * constants.SHELF_ITEM_RENDER_SCALE;
+                const eqLeft = constants.BASE_UNIT_HEIGHT * 1.25 - constants.BASE_UNIT_HEIGHT * 0.2;
+                const drawX = eqLeft + item.x;
+                const drawY = parentTopY - drawH;
+                itemRect = { x: drawX, y: drawY, w: drawW, h: drawH };
+            } else {
+                const topY = item.y * constants.BASE_UNIT_HEIGHT;
+                const itemHeight = item.u * constants.BASE_UNIT_HEIGHT;
+                const railLeft = constants.BASE_UNIT_HEIGHT * 1.25;
+                const eqPadding = constants.BASE_UNIT_HEIGHT * 0.2;
+                const eqLeft = railLeft - eqPadding;
+                const eqWidth = constants.WORLD_WIDTH - (constants.BASE_UNIT_HEIGHT * 1.25 * 2) + (eqPadding * 2);
+                itemRect = { x: eqLeft, y: topY, w: eqWidth, h: itemHeight };
+            }
+
+            // Get the current note offset for this item (or default if not set)
+            const currentNoteOffset = item.noteOffset || { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
+
+            // Calculate the note box bounds for hit testing using the current state
+            const noteBounds = getNoteDrawingMetrics(item, itemRect, actualRackXOffset, currentNoteOffset, estimatedNoteFontSize, state.scale, true).noteBox;
+
+            if (noteBounds &&
+                worldPos.x >= noteBounds.x && worldPos.x <= noteBounds.x + noteBounds.w &&
+                worldPos.y >= noteBounds.y && worldPos.y <= noteBounds.y + noteBounds.h) {
+
+                state.setIsDraggingNote(true);
+                // Store initial offset and mouse position for dragging calculations
+                state.setDraggedNoteItemInfo({
+                    item: item,
+                    rackIndex: state.activeRackIndex,
+                    initialNoteOffset: { ...currentNoteOffset }, // Store a copy
+                    tempNoteOffset: { ...currentNoteOffset }, // For live ghosting during drag
+                    dragStartMouseWorldPos: { x: worldPos.x, y: worldPos.y } // Mouse pos in world coordinates
+                });
+                canvas.style.cursor = 'grab';
+                // Select the parent item when its note is clicked, if not already selected.
+                if (!e.ctrlKey) { // Only clear and set if Ctrl is not held
+                    if (!state.selectedItems.some(sel => sel.item === (parentItem || item))) {
+                        state.setSelectedItems([{ item: (parentItem || item), parent: parentItem, rackIndex: state.activeRackIndex }]);
+                    }
+                } else { // If Ctrl is held, just add it to selection if not already there
+                    if (!state.selectedItems.some(sel => sel.item === (parentItem || item))) {
+                        state.setSelectedItems([...state.selectedItems, { item: (parentItem || item), parent: parentItem, rackIndex: state.activeRackIndex }]);
+                    }
+                }
+
+                drawRack();
+                ui.updateInfoPanel();
+                return true;
+            }
+            return false;
+        };
+
+        let noteActionTaken = false;
+        for (const item of activeRackData.equipment) {
+            if (checkItemNotes(item)) {
+                noteActionTaken = true;
+                break;
+            }
+            if (item.shelfItems) {
+                for (const shelfItem of item.shelfItems) {
+                    if (checkItemNotes(shelfItem, item)) {
+                        noteActionTaken = true;
+                        break;
+                    }
+                }
+            }
+            if (noteActionTaken) break;
+        }
+        if (noteActionTaken) {
+            return;
+        }
+    }
+
+
+    if (state.isMultiRackView) {
+        let rackActionTaken = false;
+        for (let i = 0; i < state.racks.length; i++) {
+            const rackData = state.racks[i];
+
+            const bounds = rackData.deleteBtnBounds;
+            if (bounds &&
+                worldPos.x >= bounds.x && worldPos.x <= bounds.x + bounds.w &&
+                worldPos.y >= bounds.y && worldPos.y <= bounds.y + bounds.h) {
+                ui.deleteRack(i);
+                rackActionTaken = true;
+                break;
+            }
+
+            const nameBounds = rackData.nameBounds;
+            if (nameBounds &&
+                worldPos.x >= nameBounds.x && worldPos.x <= nameBounds.x + nameBounds.w &&
+                worldPos.y >= nameBounds.y && worldPos.y <= nameBounds.y + nameBounds.h) {
+                // If a drag/reorder is intended, initiate it here.
+                // However, for typical UI, a click on name *starts* drag, dbl-click *starts* edit.
+                // Since this is handleMouseDown (single click), it should primarily select or start drag.
+                // We'll let dblclick handle editing, and single click on name just sets active rack or starts drag
+                state.setIsDraggingRack(true);
+                state.setDraggedRackIndex(i);
+                const rackXStart = i * (constants.WORLD_WIDTH + constants.RACK_SPACING);
+                state.setDraggedRackGhost({ x: rackXStart });
+                state.setDragAnchor({ offsetX: worldPos.x - rackXStart });
+                state.setDropTargetIndex(i);
+                rackActionTaken = true;
+                break;
+            }
+        }
+        if (rackActionTaken) {
+            drawRack();
+            ui.updateInfoPanel();
+            return;
+        }
+    }
+
+    const rackInfo = utils.getRackFromWorldPos(worldPos);
+    if (!rackInfo) {
+        state.setIsSelecting(true);
+        if (!e.ctrlKey) state.setSelectedItems([]);
+        state.setSelectionRect({
+            startX: e.offsetX,
+            startY: e.offsetY,
+            x: e.offsetX,
+            y: e.offsetY,
+            w: 0,
+            h: 0
+        });
+        drawRack();
+        ui.updateInfoPanel();
+        return;
+    }
+
+    const { rackIndex, rackData, localX, localY } = rackInfo;
+
+    // IMPORTANT: Set active rack on left-click if different
+    if (state.activeRackIndex !== rackIndex) {
+        state.setActiveRackIndex(rackIndex);
+        ui.updateRackControlsUI();
+    }
+
+    // If we had a previous selection on another rack, clear it unless Ctrl is held
+    if (state.selectedItems.length > 0 && !e.ctrlKey) {
+        const firstItemRack = state.selectedItems[0].rackIndex;
+        if (firstItemRack !== rackIndex) {
+            state.setSelectedItems([]);
+        }
+    }
+
+    const railLeft = constants.BASE_UNIT_HEIGHT * 1.25;
+    const eqPadding = constants.BASE_UNIT_HEIGHT * 0.2;
+    const eqLeft = railLeft - eqPadding;
+
+    let clickedSelection = null;
+
+    // First check shelf items
+    for (const parent of [...rackData.equipment].reverse()) {
+        if (parent.shelfItems) {
+            const parentTopY = parent.y * constants.BASE_UNIT_HEIGHT;
+            for (const shelfItem of parent.shelfItems) {
+                const drawW = shelfItem.size.width * constants.SHELF_ITEM_RENDER_SCALE;
+                const drawH = shelfItem.size.height * constants.SHELF_ITEM_RENDER_SCALE;
+                const itemX1 = eqLeft + shelfItem.x;
+                const itemY1 = parentTopY - drawH;
+                if (
+                    localX >= itemX1 && localX < itemX1 + drawW &&
+                    localY >= itemY1 && localY < itemY1 + drawH
+                ) {
+                    clickedSelection = { item: shelfItem, parent, rackIndex };
+                    break;
+                }
+            }
+        }
+        if (clickedSelection) break;
+    }
+
+    // Then check standard items (including V-PDUs)
+    if (!clickedSelection) {
+        // V-PDU hit test
+        const vPduHit = rackData.equipment.find(it => {
+            if (it.type === 'v-pdu') {
+                const pduRectX = it.side === 'left'
+                    ? railLeft
+                    : constants.WORLD_WIDTH - railLeft - constants.BASE_UNIT_HEIGHT * 0.75;
+                return (
+                    localX >= pduRectX &&
+                    localX <= pduRectX + constants.BASE_UNIT_HEIGHT * 0.75 &&
+                    localY >= 0 && localY <= rackData.heightU * constants.BASE_UNIT_HEIGHT
+                );
+            }
+            return false;
+        });
+        if (vPduHit) {
+            clickedSelection = { item: vPduHit, parent: null, rackIndex };
+        } else {
+            // Standard equipment hit test
+            const standardHit = [...rackData.equipment].reverse().find(it => {
+                if (it.type === 'v-pdu') return false;
+                const topY = it.y * constants.BASE_UNIT_HEIGHT;
+                const bottomY = topY + it.u * constants.BASE_UNIT_HEIGHT;
+                return (
+                    localY >= topY && localY < bottomY &&
+                    localX >= eqLeft && localX < eqLeft + (constants.WORLD_WIDTH - 2 * railLeft) + 2 * eqPadding
+                );
+            });
+            if (standardHit) {
+                clickedSelection = { item: standardHit, parent: null, rackIndex };
+            }
+        }
+    }
+
+    if (clickedSelection) {
+        const { item } = clickedSelection;
+
+        if (e.ctrlKey) {
+            // Toggle selection
+            const idx = state.selectedItems.findIndex(sel => sel.item === item);
+            if (idx > -1) state.selectedItems.splice(idx, 1);
+            else state.selectedItems.push({ ...clickedSelection });
+        } else {
+            // Replace selection
+            if (!state.selectedItems.some(sel => sel.item === item)) {
+                state.setSelectedItems([clickedSelection]);
+            }
+            // Begin dragging
+            state.setIsDraggingSelection(true);
+
+            const maxHeightU = state.isMultiRackView && state.racks.length > 0
+                ? Math.max(...state.racks.map(r => r.heightU || 42))
+                : rackData.heightU;
+            const rackYOffset = state.isMultiRackView
+                ? (maxHeightU - rackData.heightU) * constants.BASE_UNIT_HEIGHT
+                : 0;
+            const rackXOffset = state.isMultiRackView
+                ? rackIndex * (constants.WORLD_WIDTH + constants.RACK_SPACING)
+                : 0;
+
+            // Compute drag anchor
+            let anchorX, anchorY;
+            if (clickedSelection.item.type === 'shelf-item') {
+                anchorX = rackXOffset + eqLeft + clickedSelection.item.x;
+                anchorY = rackYOffset + clickedSelection.parent.y * constants.BASE_UNIT_HEIGHT
+                    - clickedSelection.item.size.height * constants.SHELF_ITEM_RENDER_SCALE;
+            } else {
+                anchorX = rackXOffset + eqLeft;
+                anchorY = rackYOffset + clickedSelection.item.y * constants.BASE_UNIT_HEIGHT;
+            }
+            state.setDragAnchor({ offsetX: worldPos.x - anchorX, offsetY: worldPos.y - anchorY, anchorItem: item });
+
+            // Store initial temp positions & drag offsets
+            state.selectedItems.forEach(sel => {
+                const selItem = sel.item;
+                if (selItem.type === 'v-pdu') return;
+                let initX, initY;
+                const selRackData = state.racks[sel.rackIndex];
+                const selYOffset = state.isMultiRackView
+                    ? (maxHeightU - selRackData.heightU) * constants.BASE_UNIT_HEIGHT
+                    : 0;
+                const selXOffset = state.isMultiRackView
+                    ? sel.rackIndex * (constants.WORLD_WIDTH + constants.RACK_SPACING)
+                    : 0;
+                const selEqLeft = selXOffset + constants.BASE_UNIT_HEIGHT * 1.25 - constants.BASE_UNIT_HEIGHT * 0.2;
+
+                if (selItem.type === 'shelf-item') {
+                    initX = selEqLeft + selItem.x;
+                    initY = selYOffset + sel.parent.y * constants.BASE_UNIT_HEIGHT
+                        - selItem.size.height * constants.SHELF_ITEM_RENDER_SCALE;
+                } else {
+                    initX = selEqLeft;
+                    initY = selYOffset + selItem.y * constants.BASE_UNIT_HEIGHT;
+                }
+
+                selItem.tempX = initX;
+                selItem.tempY = initY;
+                sel.dragOffsetX_pixels = initX - anchorX;
+                sel.dragOffsetY_pixels = initY - anchorY;
+            });
+        }
+    } else {
+        // Clicked empty rack area → begin marquee selection
+        state.setIsSelecting(true);
+        if (!e.ctrlKey) state.setSelectedItems([]);
+        state.setSelectionRect({
+            startX: e.offsetX,
+            startY: e.offsetY,
+            x: e.offsetX,
+            y: e.offsetY,
+            w: 0,
+            h: 0
+        });
+    }
+
+    drawRack();
+    ui.updateInfoPanel();
+};
+
+const handleMouseMove = (e) => {
+    // If a rack name is being edited on the canvas, prevent other canvas interactions.
+    if (state.editingRackName) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+
+    // NEW: Handle note dragging
+    if (state.isDraggingNote) {
+        canvas.style.cursor = 'grabbing';
+        const worldPos = utils.getMouseWorldPos(e);
+
+        // Calculate delta from drag start point
+        const deltaX = worldPos.x - state.draggedNoteItemInfo.dragStartMouseWorldPos.x;
+        const deltaY = worldPos.y - state.draggedNoteItemInfo.dragStartMouseWorldPos.y;
+
+        // Apply delta to initial note offset
+        const newOffsetX = state.draggedNoteItemInfo.initialNoteOffset.x + deltaX;
+        const newOffsetY = state.draggedNoteItemInfo.initialNoteOffset.y + deltaY;
+
+        // Update tempNoteOffset for ghost drawing
+        state.draggedNoteItemInfo.tempNoteOffset = { x: newOffsetX, y: newOffsetY };
+
+        drawRack(); // Redraw for ghost
+        return;
+    }
+
+    if (state.isDraggingRack) {
+        canvas.style.cursor = 'grabbing';
+        const worldPos = utils.getMouseWorldPos(e);
+        const newGhostX = worldPos.x - state.dragAnchor.offsetX;
+        state.setDraggedRackGhost({ x: newGhostX });
+        const rackAndSpacingWidth = constants.WORLD_WIDTH + constants.RACK_SPACING;
+        const hoverIndex = Math.floor((worldPos.x + (rackAndSpacingWidth / 2)) / rackAndSpacingWidth);
+        const newDropIndex = Math.max(0, Math.min(state.racks.length, hoverIndex));
+        if (newDropIndex !== state.dropTargetIndex) {
+            state.setDropTargetIndex(newDropIndex);
+        }
+        drawRack();
+        return;
+    }
+
+    if (state.isPanning) {
+        const dx = e.clientX - state.panStart.x;
+        const dy = e.clientY - state.panStart.y;
+        state.setViewOffset({ x: state.viewOffset.x + dx, y: state.viewOffset.y + dy });
+        state.setPanStart({ x: e.clientX, y: e.clientY });
+        drawRack();
+        return;
+    }
+
+    if (!state.isDraggingSelection && !state.isSelecting) {
+        let cursorSet = false;
+        if (state.isMultiRackView && !state.isPanning) {
+            const worldPos = utils.getMouseWorldPos(e);
+            for (const rackData of state.racks) {
+                const nb = rackData.nameBounds;
+                if (nb && worldPos.x >= nb.x && worldPos.x <= nb.x + nb.w && worldPos.y >= nb.y && worldPos.y <= nb.y + nb.h) {
+                    canvas.style.cursor = 'grab';
+                    cursorSet = true;
+                    break;
+                }
+            }
+        }
+        // NEW: If not multi-rack view and not dragging/panning, check for note hover
+        if (!cursorSet && !state.isMultiRackView && !state.isPanning && state.activeRackIndex > -1) {
+            const worldPos = utils.getMouseWorldPos(e);
+            const activeRackData = state.racks[state.activeRackIndex];
+            const actualRackXOffset = 0; // In single rack view, the active rack is drawn at world X=0
+            let hoveringOverNote = false;
+
+            const estimatedNoteFontSize = Math.max(9, Math.min(16, constants.BASE_UNIT_HEIGHT * 0.35));
+
+            // Iterate over equipment and their shelfItems to check for note hover
+            const checkAndSetNoteCursor = (item, parentItem = null) => {
+                if (!item.notes || item.notes.trim() === '') return false;
+                let itemRect;
+                if (item.type === 'shelf-item') {
+                    const parentTopY = parentItem.y * constants.BASE_UNIT_HEIGHT;
+                    const drawW = item.size.width * constants.SHELF_ITEM_RENDER_SCALE;
+                    const drawH = item.size.height * constants.SHELF_ITEM_RENDER_SCALE;
+                    const eqLeft = constants.BASE_UNIT_HEIGHT * 1.25 - constants.BASE_UNIT_HEIGHT * 0.2;
+                    const drawX = eqLeft + item.x;
+                    const drawY = parentTopY - drawH;
+                    itemRect = { x: drawX, y: drawY, w: drawW, h: drawH };
+                } else {
+                    const topY = item.y * constants.BASE_UNIT_HEIGHT;
+                    const itemHeight = item.u * constants.BASE_UNIT_HEIGHT;
+                    const railLeft = constants.BASE_UNIT_HEIGHT * 1.25;
+                    const eqPadding = constants.BASE_UNIT_HEIGHT * 0.2;
+                    const eqLeft = railLeft - eqPadding;
+                    const eqWidth = constants.WORLD_WIDTH - (constants.BASE_UNIT_HEIGHT * 1.25 * 2) + (eqPadding * 2);
+                    itemRect = { x: eqLeft, y: topY, w: eqWidth, h: itemHeight };
+                }
+
+                const currentNoteOffset = item.noteOffset || { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
+                const noteBounds = getNoteDrawingMetrics(item, itemRect, actualRackXOffset, currentNoteOffset, estimatedNoteFontSize, state.scale, true).noteBox;
+
+                if (noteBounds &&
+                    worldPos.x >= noteBounds.x && worldPos.x <= noteBounds.x + noteBounds.w &&
+                    worldPos.y >= noteBounds.y && worldPos.y <= noteBounds.y + noteBounds.h) {
+                    canvas.style.cursor = 'grab';
+                    return true;
+                }
+                return false;
+            };
+
+            for (const item of activeRackData.equipment) {
+                if (checkAndSetNoteCursor(item)) {
+                    hoveringOverNote = true;
+                    break;
+                }
+                if (item.shelfItems) {
+                    for (const shelfItem of item.shelfItems) {
+                        if (checkAndSetNoteCursor(shelfItem, item)) {
+                            hoveringOverNote = true;
+                            break;
+                        }
+                    }
+                }
+                if (hoveringOverNote) break;
+            }
+            if (hoveringOverNote) {
+                cursorSet = true;
+            }
+        }
+        if (!cursorSet && !canvas.classList.contains('panning')) {
+            canvas.style.cursor = 'default';
+        }
+        return;
+    };
+
+    const worldPos = utils.getMouseWorldPos(e);
+    if (state.isDraggingSelection) {
+        const newAnchorTempX = worldPos.x - state.dragAnchor.offsetX;
+        const newAnchorTempY = worldPos.y - state.dragAnchor.offsetY;
+        state.selectedItems.forEach(sel => {
+            const { item } = sel;
+            if (item.type === 'v-pdu') return;
+            item.tempY = newAnchorTempY + sel.dragOffsetY_pixels;
+            if (item.type !== 'shelf-item') {
+                item.tempX = newAnchorTempX + sel.dragOffsetX_pixels;
+            }
+        });
+    } else if (state.isSelecting) {
+        const newRect = { ...state.selectionRect, x: Math.min(e.offsetX, state.selectionRect.startX), y: Math.min(e.offsetY, state.selectionRect.startY), w: Math.abs(e.offsetX - state.selectionRect.startX), h: Math.abs(e.offsetY - state.selectionRect.startY) };
+        state.setSelectionRect(newRect);
+        ui.updateSelection(e.ctrlKey);
+    }
+    drawRack();
+};
+
+const handleMouseUp = (e) => {
+    // If a rack name is being edited on the canvas, prevent other canvas interactions.
+    if (state.editingRackName) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+
+    // NEW: if the mouse is released anywhere inside the info‐panel, skip all canvas cleanup & rerender
+    if (e.target.closest('#right-info-panel')) {
+        return;
+    }
+
+    // NEW: Finish dragging a note
+    if (state.isDraggingNote) {
+        if (state.draggedNoteItemInfo && state.draggedNoteItemInfo.item && state.draggedNoteItemInfo.tempNoteOffset) {
+            state.draggedNoteItemInfo.item.noteOffset = { ...state.draggedNoteItemInfo.tempNoteOffset }; // Apply final position
+            // Clean up temporary drag properties
+            delete state.draggedNoteItemInfo.tempNoteOffset; // No longer needed after drag ends
+        }
+        state.setIsDraggingNote(false);
+        state.setDraggedNoteItemInfo(null);
+        canvas.style.cursor = 'default';
+        drawRack();
+        ui.updateInfoPanel();
+        return;
+    }
+
+    // 1) Finish dragging a rack
+    if (state.isDraggingRack) {
+        const activeRackId = state.racks[state.activeRackIndex]?.id;
+        const movedRack = state.racks.splice(state.draggedRackIndex, 1)[0];
+        let finalDropIndex = state.dropTargetIndex;
+        if (finalDropIndex > state.draggedRackIndex) {
+            finalDropIndex--;
+        }
+        state.racks.splice(finalDropIndex, 0, movedRack);
+        if (activeRackId) {
+            state.setActiveRackIndex(state.racks.findIndex(r => r.id === activeRackId));
+        }
+        state.setIsDraggingRack(false);
+        state.setDraggedRackIndex(-1);
+        state.setDropTargetIndex(-1);
+        state.setDragAnchor(null);
+        canvas.style.cursor = 'default';
+        drawRack();
+        ui.updateInfoPanel();
+        return;
+    }
+
+    // 2) Finish panning
+    if (state.isPanning) {
+        state.setIsPanning(false);
+        canvas.classList.remove('panning');
+    }
+
+    // 3) Finish dragging equipment selection
+    if (state.isDraggingSelection) {
+        const worldPos = utils.getMouseWorldPos(e);
+        const targetRackInfo = utils.getRackFromWorldPos(worldPos);
+        if (targetRackInfo) {
+            const { rackIndex: targetRackIndex, rackData: targetRackData } = targetRackInfo;
+            const targetEquipment = targetRackData.equipment;
+            const draggableStdItems = state.selectedItems.filter(sel => sel.item.type !== 'v-pdu' && sel.item.type !== 'shelf-item');
+
+            if (draggableStdItems.length > 0) {
+                let isValidMove = true;
+                const maxHeightU = state.isMultiRackView && state.racks.length > 0
+                    ? Math.max(...state.racks.map(r => r.heightU || 42))
+                    : targetRackData.heightU;
+                const targetRackYOffset = state.isMultiRackView
+                    ? (maxHeightU - targetRackData.heightU) * constants.BASE_UNIT_HEIGHT
+                    : 0;
+
+                const proposedMoves = draggableStdItems.map(sel => {
+                    const ghostY = sel.item.tempY - targetRackYOffset;
+                    return { sel, newY_U: Math.round(ghostY / constants.BASE_UNIT_HEIGHT) };
+                });
+
+                const otherItems = targetEquipment.filter(it =>
+                    !draggableStdItems.some(s => s.item === it) && it.type !== 'v-pdu'
+                );
+
+                for (const { sel, newY_U } of proposedMoves) {
+                    if (
+                        newY_U < 0 ||
+                        newY_U + sel.item.u > targetRackData.heightU ||
+                        otherItems.some(o => newY_U < o.y + o.u && newY_U + sel.item.u > o.y)
+                    ) {
+                        isValidMove = false;
+                        break;
+                    }
+                }
+
+                if (isValidMove) {
+                    // Collect items that were successfully moved to the target rack
+                    const newlyMovedItems = [];
+                    proposedMoves.forEach(({ sel, newY_U }) => {
+                        sel.item.y = newY_U;
+                        if (sel.rackIndex !== targetRackIndex) {
+                            const srcEquip = state.racks[sel.rackIndex].equipment;
+                            const idx = srcEquip.indexOf(sel.item);
+                            if (idx > -1) srcEquip.splice(idx, 1);
+                            targetEquipment.push(sel.item);
+                            sel.rackIndex = targetRackIndex;
+                        }
+                        newlyMovedItems.push({ item: sel.item, parent: sel.parent, rackIndex: sel.rackIndex });
+                    });
+                    // Select only the newly moved items
+                    state.setSelectedItems(newlyMovedItems);
+                }
+            }
+        }
+
+        // 4) Common cleanup & rerender
+        state.setIsDraggingSelection(false);
+        state.setIsSelecting(false);
+        state.setDragAnchor(null);
+
+        // Remove temporary drag coords
+        state.racks.forEach(r =>
+            r.equipment.forEach(it => {
+                delete it.tempX;
+                delete it.tempY;
+                if (it.shelfItems) it.shelfItems.forEach(si => {
+                    delete si.tempX;
+                    delete si.tempY;
+                });
+            })
+        );
+        state.selectedItems.forEach(sel => {
+            delete sel.dragOffsetX_pixels;
+            delete sel.dragOffsetY_pixels;
+        });
+
+        drawRack();
+        ui.updateInfoPanel();
+        return;
+    }
+
+    state.setIsDraggingSelection(false); // Make sure this is reset
+    state.setIsSelecting(false); // Make sure this is reset
+    state.setDragAnchor(null);
+
+    // Remove temporary drag coords
+    state.racks.forEach(r =>
+        r.equipment.forEach(it => {
+            delete it.tempX;
+            delete it.tempY;
+            if (it.shelfItems) it.shelfItems.forEach(si => {
+                delete si.tempX;
+                delete si.tempY;
+            });
+        })
+    );
+    state.selectedItems.forEach(sel => {
+        delete sel.dragOffsetX_pixels;
+        delete sel.dragOffsetY_pixels;
+    });
+
+    drawRack(); // Ensure any selection highlight is removed if nothing was clicked/dragged
+    ui.updateInfoPanel();
+};
+
+const handleWheel = (e) => {
+    // If a rack name is being edited on the canvas, prevent other canvas interactions.
+    if (state.editingRackName) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+
+    e.preventDefault();
+    const zoomIntensity = 0.1;
+    const mousePos = { x: e.offsetX, y: e.offsetY };
+    const worldPosBefore = utils.getMouseWorldPos(e);
+    const newScale = state.scale * (1 - Math.sign(e.deltaY) * zoomIntensity);
+    const clampedScale = Math.max(0.1, Math.min(10, newScale));
+    state.setScale(clampedScale);
+    const newViewOffset = { x: mousePos.x - worldPosBefore.x * state.scale, y: mousePos.y - worldPosBefore.y * state.scale };
+    state.setViewOffset(newViewOffset);
+    drawRack();
+    ui.updateZoomButtons();
+};
+
+const handleDrop = (e) => {
+    // If a rack name is being edited on the canvas, prevent other canvas interactions.
+    if (state.editingRackName) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+
+    e.preventDefault();
+    const worldPos = utils.getMouseWorldPos(e);
+    const rackInfo = utils.getRackFromWorldPos(worldPos);
+    if (!rackInfo) return;
+    const { rackIndex, rackData, localX, localY } = rackInfo;
+    const rack = rackData.equipment;
+    const label = e.dataTransfer.getData('label');
+    const type = e.dataTransfer.getData('type');
+    const stencil = e.dataTransfer.getData('stencil');
+    const stencilRear = e.dataTransfer.getData('stencilRear');
+
+    let newItem = null; // Variable to hold the newly created item
+
+    if (type === 'shelf-item') {
+        const size = JSON.parse(e.dataTransfer.getData('size'));
+        const { newParent, newX } = utils.findValidShelfParent(localY, { size }, rack, localX);
+        if (newParent) {
+            newItem = { x: newX, label, type, stencil, stencilRear, size, notes: '', noteOffset: { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y } }; // Initialize notes AND noteOffset
+            if (!newParent.shelfItems) newParent.shelfItems = [];
+            newParent.shelfItems.push(newItem);
+            state.setSelectedItems([{ item: newItem, parent: newParent, rackIndex }]); // Select the new item
+        }
+    } else if (type === 'v-pdu') {
+        const railLeft = constants.BASE_UNIT_HEIGHT * 1.25;
+        const railRight = constants.WORLD_WIDTH - railLeft;
+        const rackCenterline = railLeft + (railRight - railLeft) / 2;
+        const targetSide = (localX < rackCenterline) ? 'left' : 'right';
+        if (!rack.some(it => it.type === 'v-pdu' && it.side === targetSide)) {
+            newItem = { y: 0, u: rackData.heightU, label, type, stencil, stencilRear, side: targetSide, notes: '', noteOffset: { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y } }; // Initialize notes AND noteOffset
+            rack.push(newItem);
+            state.setSelectedItems([{ item: newItem, parent: null, rackIndex }]); // Select the new item
+        } else {
+            alert(`A V-PDU is already on the ${targetSide} side of this rack.`);
+        }
+    } else { // Handle standard equipment drop (not shelf-item or v-pdu)
+        const u = parseInt(e.dataTransfer.getData('u'), 10);
+        // Calculate the initial, preferred Y position based on mouse cursor
+        const initialY = Math.max(0, Math.min(rackData.heightU - u, Math.floor(localY / constants.BASE_UNIT_HEIGHT)));
+
+        // Filter existing items to only include standard equipment for overlap checks
+        const existingStandardEquipment = rack.filter(it => it.type !== 'v-pdu');
+
+        // Find an available Y position
+        const newY = utils.findAvailableY(u, initialY, existingStandardEquipment, rackData.heightU);
+
+        if (newY !== -1) { // If an available position was found
+            newItem = {
+                y: newY, // Use the found Y
+                u, label, type, stencil, stencilRear, shelfItems: [],
+                notes: '',
+                noteOffset: { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y }
+            };
+            rack.push(newItem);
+            state.setSelectedItems([{ item: newItem, parent: null, rackIndex }]); // Select the new item
+        } else {
+            alert(`Cannot place ${label} anywhere in this rack: No available space found.`); // Only alert if no space found *anywhere*
+        }
+    }
+    drawRack();
+    ui.updateInfoPanel();
+};
+
+function handleCopy() {
+    const copyableItems = state.selectedItems.filter(s => s.item.type !== 'shelf-item');
+    if (copyableItems.length === 0) {
+        state.setClipboard({ standardItems: [], vpdus: [], originalTopY: null });
+        return;
+    }
+    const standardItems = copyableItems.filter(s => s.item.type !== 'v-pdu');
+    const vpdus = copyableItems.filter(s => s.item.type === 'v-pdu');
+    let originalTopY = null;
+    let clipboardStandardItems = [];
+    if (standardItems.length > 0) {
+        standardItems.sort((a, b) => a.rackIndex - b.rackIndex || a.item.y - b.item.y);
+        const topMostItem = standardItems[0];
+        originalTopY = topMostItem.item.y;
+        clipboardStandardItems = standardItems.map(s => ({ item: JSON.parse(JSON.stringify(s.item)), relativeY: s.item.y - originalTopY, }));
+    }
+    const clipboardVPDUs = vpdus.map(s => JSON.parse(JSON.stringify(s.item)));
+    state.setClipboard({ standardItems: clipboardStandardItems, vpdus: clipboardVPDUs, originalTopY: originalTopY });
+}
+
+function handleCut() {
+    handleCopy();
+    // Use the batch delete function for cut
+    ui.deleteSelectedItem(); // Corrected: Calls deleteSelectedItem which handles batch deletion
+    // deleteSelectedItem already clears selection, draws, and updates info panel.
+}
+
+function handlePaste() {
+    const { standardItems: clipboardStandardItems, vpdus: clipboardVPDUs, originalTopY } = state.clipboard;
+    if (clipboardStandardItems.length === 0 && clipboardVPDUs.length === 0) return;
+    if (state.activeRackIndex === -1) return;
+    const targetRack = state.racks[state.activeRackIndex];
+    const newSelectedItems = [];
+    let somethingPasted = false;
+    if (clipboardStandardItems.length > 0) {
+        const existingItems = targetRack.equipment.filter(it => it.type !== 'v-pdu');
+        const blockHeight = Math.max(...clipboardStandardItems.map(c => c.relativeY + c.item.u));
+        const isSpaceFree = (startY, height, rackItems) => {
+            if (startY < 0 || startY + height > targetRack.heightU) return false;
+            for (const clipboardItem of clipboardStandardItems) {
+                const newY = startY + clipboardItem.relativeY;
+                const newU = clipboardItem.item.u;
+                // Check if the individual item from clipboard overlaps with existing items in the target rack
+                for (const existingItem of rackItems) {
+                    if (newY < existingItem.y + existingItem.u && newY + newU > existingItem.y) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        };
+        let pasteY = -1;
+        // Try to paste at the original Y if possible
+        if (originalTopY !== null && isSpaceFree(originalTopY, blockHeight, existingItems)) {
+            pasteY = originalTopY;
+        } else { // Otherwise, find the next available space
+            for (let y = 0; y <= targetRack.heightU - blockHeight; y++) {
+                if (isSpaceFree(y, blockHeight, existingItems)) {
+                    pasteY = y;
+                    break;
+                }
+            }
+        }
+
+        if (pasteY !== -1) {
+            clipboardStandardItems.forEach(clipboardItem => {
+                const newItem = JSON.parse(JSON.stringify(clipboardItem.item));
+                newItem.y = pasteY + clipboardItem.relativeY;
+                if (!newItem.notes) newItem.notes = ''; // Ensure notes property exists
+                if (!newItem.shelfItems) newItem.shelfItems = []; // Ensure shelfItems exists
+                if (newItem.noteOffset === undefined) newItem.noteOffset = { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y }; // Ensure noteOffset exists for pasted items
+                targetRack.equipment.push(newItem);
+                newSelectedItems.push({ item: newItem, parent: null, rackIndex: state.activeRackIndex });
+            });
+            somethingPasted = true;
+        } else {
+            alert("Not enough contiguous space in the rack to paste the standard items.");
+        }
+    }
+    if (clipboardVPDUs.length > 0) {
+        clipboardVPDUs.forEach(pduToPaste => {
+            const sideIsTaken = targetRack.equipment.some(it => it.type === 'v-pdu' && it.side === pduToPaste.side);
+            if (!sideIsTaken) {
+                const newItem = JSON.parse(JSON.stringify(pduToPaste));
+                newItem.u = targetRack.heightU; // VPDUs typically span the full height of the rack
+                if (!newItem.notes) newItem.notes = ''; // Ensure notes property exists
+                if (newItem.noteOffset === undefined) newItem.noteOffset = { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y }; // Ensure noteOffset exists for pasted items
+                targetRack.equipment.push(newItem);
+                newSelectedItems.push({ item: newItem, parent: null, rackIndex: state.activeRackIndex });
+                somethingPasted = true;
+            } else {
+                alert(`Cannot paste V-PDU on ${pduToPaste.side} side: already occupied.`);
+            }
+        });
+    }
+    if (somethingPasted) {
+        targetRack.equipment.sort((a, b) => a.y - b.y);
+        state.setSelectedItems(newSelectedItems);
+        drawRack();
+        ui.updateInfoPanel();
+    }
+}
+
+// NEW: Double click handler for rack name editing
+const handleDoubleClick = (e) => {
+    // Prevent default double-click behavior (e.g., text selection)
+    e.preventDefault();
+    e.stopPropagation(); // Stop propagation to prevent canvas events immediately below
+
+    // If already editing, just hide the current editor and let the new one take over (or do nothing)
+    if (state.editingRackName) {
+        ui.hideCanvasRackNameEditor(); // Ensure previous editor is closed
+        drawRack(); // Redraw immediately to clear the hidden name
+    }
+
+    // Only allow editing in multi-rack view
+    if (!state.isMultiRackView) {
+        return;
+    }
+
+    const worldPos = utils.getMouseWorldPos(e);
+
+    for (let i = 0; i < state.racks.length; i++) {
+        const rackData = state.racks[i];
+        const nameBounds = rackData.nameBounds;
+
+        if (nameBounds &&
+            worldPos.x >= nameBounds.x && worldPos.x <= nameBounds.x + nameBounds.w &&
+            worldPos.y >= nameBounds.y && worldPos.y <= nameBounds.y + nameBounds.h) {
+
+            state.setEditingRackName(true);
+            state.setEditingRackIndex(i);
+            ui.showCanvasRackNameEditor(i, rackData);
+            drawRack(); // Redraw canvas to hide the name while input is active
+            return;
+        }
+    }
+};
+
+
+const handleKeyDown = (e) => {
+    // If a rack name is being edited on the canvas, allow text input.
+    // If it's an input field related to the canvas-based name editor, let key events pass.
+    if (state.editingRackName && e.target.classList.contains('canvas-rack-name-editor')) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.target.blur(); // Trigger blur to save the name
+        }
+        e.stopPropagation(); // Prevent other keydowns on canvas
+        return;
+    }
+
+    // If any modal is open, prevent keydown events from propagating to canvas actions
+    if (!document.getElementById('save-as-modal').classList.contains('hidden') ||
+        !document.getElementById('load-modal').classList.contains('hidden')) {
+        if (e.key === 'Escape') {
+            if (!document.getElementById('save-as-modal').classList.contains('hidden')) { ui.hideSaveFilenameModal(); }
+            else if (!document.getElementById('load-modal').classList.contains('hidden')) { ui.hideLoadModal(); }
+        }
+        return; // Prevent further keydown processing if a modal is open
+    }
+
+    // NEW: Removed SELECT from this check, as the note position control is now removed from the info panel
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+    if (isCtrlOrCmd && e.key.toLowerCase() === 'c') { e.preventDefault(); handleCopy(); return; }
+    if (isCtrlOrCmd && e.key.toLowerCase() === 'x') { e.preventDefault(); handleCut(); return; }
+    if (isCtrlOrCmd && e.key.toLowerCase() === 'v') { e.preventDefault(); handlePaste(); return; }
+    if (isCtrlOrCmd && e.key.toLowerCase() === 's') { e.preventDefault(); ui.saveLayout(); return; } // NEW: Ctrl+S to save
+
+    // MODIFIED: Use ui.deleteSelectedItem() and include Backspace
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedItems.length > 0) {
+        e.preventDefault(); // Prevent browser's default delete behavior
+        ui.deleteSelectedItem(); // Call the batch delete function
+    }
+};
+
+const handleContextMenu = (e) => {
+    // If a rack name is being edited on the canvas, prevent other canvas interactions.
+    if (state.editingRackName) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+    }
+
+    e.preventDefault();
+    const worldPos = utils.getMouseWorldPos(e);
+    const rackInfo = utils.getRackFromWorldPos(worldPos);
+
+    // Always hide any currently active context menu first
+    ui.hideContextMenu();
+
+    if (!rackInfo) {
+        // If right-click is not on a rack, just clear selection and return.
+        if (state.selectedItems.length > 0) {
+            state.setSelectedItems([]);
+            ui.updateInfoPanel();
+            drawRack(); // Explicitly redraw to remove highlights
+        }
+        return;
+    }
+
+    // Set the active rack to the one that was right-clicked.
+    // This is crucial for context menu actions like "Fill with Blanking Plates"
+    // to target the correct rack in multi-rack view.
+    // If changing active rack, immediately redraw to show the highlight.
+    if (state.activeRackIndex !== rackInfo.rackIndex) {
+        state.setActiveRackIndex(rackInfo.rackIndex);
+        ui.updateRackControlsUI(); // Update UI controls if rack changed
+        drawRack(); // Redraw to show rack highlight
+    }
+
+    // Determine the clicked item, if any
+    let clickedItem = null;
+
+    // 1. Shelf item hit test (iterate from visual top to bottom for accurate hit)
+    for (const parent of [...rackInfo.rackData.equipment].sort((a, b) => b.y - a.y)) {
+        if (parent.shelfItems) {
+            for (const shelfItem of [...parent.shelfItems].reverse()) {
+                const drawW = shelfItem.size.width * constants.SHELF_ITEM_RENDER_SCALE;
+                const drawH = shelfItem.size.height * constants.SHELF_ITEM_RENDER_SCALE;
+                const eqLeft = constants.BASE_UNIT_HEIGHT * 1.25 - constants.BASE_UNIT_HEIGHT * 0.2; // Fixed left edge for equipment area
+                const itemX1 = eqLeft + shelfItem.x;
+                const itemY1 = (parent.y * constants.BASE_UNIT_HEIGHT) - drawH;
+
+                if (
+                    rackInfo.localX >= itemX1 && rackInfo.localX < itemX1 + drawW &&
+                    rackInfo.localY >= itemY1 && rackInfo.localY < itemY1 + drawH
+                ) {
+                    clickedItem = { item: shelfItem, parent, rackIndex: rackInfo.rackIndex };
+                    break;
+                }
+            }
+        }
+        if (clickedItem) break;
+    }
+
+    // 2. V-PDU hit test (if no shelf item found)
+    if (!clickedItem) {
+        clickedItem = rackInfo.rackData.equipment.find(it => it.type === 'v-pdu' && utils.isVpduUnderMouse(it, rackInfo.localX, rackInfo.localY, rackInfo.rackData.heightU));
+        if (clickedItem) clickedItem = { item: clickedItem, parent: null, rackIndex: rackInfo.rackIndex };
+    }
+
+    // 3. Standard equipment hit test (if no shelf item or V-PDU found)
+    if (!clickedItem) {
+        clickedItem = [...rackInfo.rackData.equipment].reverse().find(it => !['v-pdu', 'shelf-item'].includes(it.type) && utils.isStandardItemUnderMouse(it, rackInfo.localX, rackInfo.localY));
+        if (clickedItem) clickedItem = { item: clickedItem, parent: null, rackIndex: rackInfo.rackIndex };
+    }
+
+    // NEW LOGIC for selection on right-click:
+    if (clickedItem) {
+        // Check if the clicked item is ALREADY part of the current selection.
+        const isClickedItemAlreadySelected = state.selectedItems.some(
+            sel => sel.item === clickedItem.item && sel.rackIndex === clickedItem.rackIndex
+        );
+
+        if (!isClickedItemAlreadySelected) {
+            // If the clicked item is not already selected, then make it the sole selection.
+            state.setSelectedItems([clickedItem]);
+        }
+        // If it *is* already selected, do nothing to state.selectedItems,
+        // thus preserving the existing multi-selection for context menu actions.
+    } else {
+        // If right-clicked on empty rack space, clear any selection.
+        state.setSelectedItems([]);
+    }
+
+    drawRack(); // Redraw immediately to show/remove selection highlight
+    ui.updateInfoPanel(); // Always update info panel after selection might change
+    ui.showContextMenu(e.clientX, e.clientY);
+};
+
+
+export const initEventListeners = () => {
+    // Guard to ensure this only runs once.
+    if (hasInitializedEvents) {
+        return;
+    }
+    hasInitializedEvents = true;
+    console.log("Event listeners have been initialized (once).");
+
+    // --- All Event Listeners ---
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove); // Moved from document for performance
+    canvas.addEventListener('mouseup', handleMouseUp);     // Moved from document for performance
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener('dragover', e => e.preventDefault());
+    canvas.addEventListener('drop', handleDrop);
+    canvas.addEventListener('contextmenu', handleContextMenu);
+    canvas.addEventListener('dblclick', handleDoubleClick); // NEW: Double click for renaming
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('click', e => {
+        if (!e.target.closest('.context-menu')) {
+            ui.hideContextMenu();
+        }
+    });
+
+    // Left Panel & Footer Buttons
+    document.getElementById('equip-search').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('.tool-item').forEach(item => {
+            const matches = item.textContent.toLowerCase().includes(searchTerm);
+            item.style.display = matches ? '' : 'none';
+        });
+    });
+    // --- NEW/UPDATED: Save/Load/Reset Buttons ---
+    document.getElementById('save-layout-btn').addEventListener('click', () => ui.saveLayout());
+    document.getElementById('load-layout-btn').addEventListener('click', ui.showLoadModal);
+    document.getElementById('reset-new-btn').addEventListener('click', ui.resetNewLayout);
+    // ---------------------------------------------
+
+    document.getElementById('theme-switcher-btn').addEventListener('click', () => {
+        const isDark = document.documentElement.classList.contains('dark');
+        ui.setTheme(isDark ? 'light' : 'dark');
+    });
+
+    // Right Panel & Canvas Controls
+    document.getElementById('view-toggle-btn').addEventListener('click', ui.toggleRackView);
+    document.getElementById('toggle-layout-view-btn').addEventListener('click', ui.toggleMultiRackView);
+    document.getElementById('zoom-fit').addEventListener('click', () => ui.setZoom('fit'));
+    document.getElementById('zoom-0.5x').addEventListener('click', () => ui.setZoom(0.5));
+    document.getElementById('zoom-1x').addEventListener('click', () => ui.setZoom(1.0));
+    document.getElementById('zoom-2x').addEventListener('click', () => ui.setZoom(2.0));
+    document.getElementById('rackSizeSelect').addEventListener('change', ui.updateRackSize);
+    document.getElementById('add-rack-btn').addEventListener('click', ui.addNewRack);
+    document.getElementById('prev-rack-btn').addEventListener('click', () => ui.switchRack('prev'));
+    document.getElementById('next-rack-btn').addEventListener('click', () => ui.switchRack('next'));
+    document.getElementById('delete-rack-btn').addEventListener('click', () => {
+        if (state.activeRackIndex > -1) ui.deleteRack(state.activeRackIndex);
+    });
+
+    // NEW: Event listeners for rack name input
+    const rackNameInput = document.getElementById('rack-name-display');
+    if (rackNameInput) {
+        rackNameInput.addEventListener('blur', ui.handleRackRename);
+        rackNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent default form submission or new line
+                ui.handleRackRename(e);
+                e.target.blur(); // Remove focus from the input
+            }
+        });
+    }
+
+
+    // ---- THE ONE AND ONLY TOGGLE BUTTON LISTENER ----
+    document.getElementById('show-info-btn').addEventListener('click', ui.toggleInfoPanel);
+    document.getElementById('hide-info-btn').addEventListener('click', ui.toggleInfoPanel);
+
+
+    // Context Menu
+    state.contextMenu.addEventListener('click', e => {
+        const li = e.target.closest('li');
+        if (!li || li.classList.contains('disabled') || !li.dataset.action) return;
+
+        const action = li.dataset.action;
+        const count = parseInt(li.dataset.count, 10);
+
+        if (action === 'fill-blanks') ui.fillRackWithBlanks();
+        else if (action === 'edit-notes') {
+            ui.openInfoPanel();
+        }
+        else ui.duplicateSelection(action.endsWith('up') ? 'up' : 'down', count);
+
+        ui.hideContextMenu();
+    });
+
+    // --- NEW: Save Filename Modal Listeners (reused for "Save As") ---
+    const saveAsModal = document.getElementById('save-as-modal'); // This is the overlay div
+    const saveAsFilenameInput = document.getElementById('save-as-filename');
+    // Keeping these for robustness
+    saveAsFilenameInput.addEventListener('mousedown', e => e.stopPropagation());
+    saveAsFilenameInput.addEventListener('mouseup', e => e.stopPropagation());
+
+    document.getElementById('save-as-save-btn').addEventListener('click', () => ui.saveLayout(saveAsFilenameInput.value));
+    document.getElementById('save-as-cancel-btn').addEventListener('click', ui.hideSaveFilenameModal);
+    // MODIFIED: Robust modal closing logic - now uses 'mousedown' instead of 'click'
+    saveAsModal.addEventListener('mousedown', (e) => {
+        if (e.target === saveAsModal) { // Only hide when the user actually presses down on the overlay background
+            ui.hideSaveFilenameModal();
+        }
+    });
+    saveAsFilenameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Prevent form submission
+            ui.saveLayout(saveAsFilenameInput.value);
+        }
+    });
+
+    // --- NEW: Load Existing Modal Listeners ---
+    const loadModal = document.getElementById('load-modal'); // This is the overlay div
+    document.getElementById('load-selected-btn').addEventListener('click', ui.handleLoadSelected);
+    document.getElementById('delete-selected-btn').addEventListener('click', ui.handleDeleteSelected);
+    document.getElementById('load-cancel-btn').addEventListener('click', ui.hideLoadModal);
+    // MODIFIED: Robust modal closing logic - now uses 'mousedown' instead of 'click'
+    loadModal.addEventListener('mousedown', (e) => {
+        if (e.target === loadModal) { // Only hide when the user actually presses down on the overlay background
+            ui.hideLoadModal();
+        }
+    });
+    // Double click to load
+    document.getElementById('load-file-list').addEventListener('dblclick', (e) => {
+        if (e.target.tagName === 'LI' && e.target.dataset.filename) {
+            // Find the li element that was double-clicked
+            const clickedLi = e.target.closest('li');
+            if (clickedLi) {
+                // Manually set selectedLayoutToLoad and enable buttons
+                ui.setSelectedLayoutToLoad(clickedLi.dataset.filename); // Use a setter if available
+                document.getElementById('load-selected-btn').disabled = false;
+                document.getElementById('delete-selected-btn').disabled = false;
+
+                // Remove 'selected' from any other li and add to clicked
+                const currentSelected = loadModal.querySelector('li.selected');
+                if (currentSelected) currentSelected.classList.remove('selected');
+                clickedLi.classList.add('selected');
+
+                // Then handle load
+                ui.handleLoadSelected();
+            }
+        }
+    });
+
+    // --- NEW: Export Buttons Listeners ---
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    const exportImageBtn = document.getElementById('export-image-btn');
+
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', ui.exportToPdf);
+        console.log('PDF export button listener attached.');
+    } else {
+        console.error('PDF export button not found! ID: export-pdf-btn');
+    }
+
+    if (exportImageBtn) {
+        exportImageBtn.addEventListener('click', ui.exportToImage);
+        console.log('Image export button listener attached.');
+    } else {
+        console.error('Image export button not found! ID: export-image-btn');
+    }
+    // ------------------------------------
+
+    // Global Listeners
+    window.addEventListener('resize', () => ui.setZoom('fit'));
+    // Consolidated modal escape key handling in handleKeyDown
+
+    // NEW: beforeunload event listener for unsaved changes
+    window.addEventListener('beforeunload', function (event) {
+        // If the layout is already empty, or if there are no unsaved changes,
+        // we don't need to show the warning.
+        if (utils.isLayoutEffectivelyEmpty() || !utils.hasUnsavedChanges()) {
+            console.log("No beforeunload warning needed (layout empty or no changes).");
+            return; // Allow the page to unload without a prompt
+        }
+
+        // If the layout is NOT empty AND there are unsaved changes, prompt the user.
+        // The browser's default message will be used (e.g., "Changes you made may not be saved.")
+        event.preventDefault(); // Required for older browsers
+        event.returnValue = ''; // Standard for modern browsers
+        console.log("Showing beforeunload warning due to unsaved changes in non-empty layout.");
+    });
+};
