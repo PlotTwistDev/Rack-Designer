@@ -143,3 +143,11 @@ Follow these instructions to set up and run the Rack Designer application locall
 
 6.  **Theme Switcher:**
     *   Located on the bottom-right, allows toggling between Light (☀️) and Dark (🌙) mode.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and open a pull request with your changes. For major features or breaking changes, open an issue first to discuss your proposal.
+
+## License
+
+This project is licensed under the MIT License.
