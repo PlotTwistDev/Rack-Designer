@@ -1,11 +1,7 @@
-
-
-// --- START OF FILE constants.js ---
-
 // --- Constants ---
 export const BASE_UNIT_HEIGHT = 40;
 export const SHELF_ITEM_RENDER_SCALE = 0.85;
-export const RACK_SPACING = BASE_UNIT_HEIGHT * 4;
+export const RACK_SPACING = BASE_UNIT_HEIGHT * 10;
 export const WORLD_WIDTH = BASE_UNIT_HEIGHT * 14;
 
 // Color mapping for equipment types
@@ -27,5 +23,5 @@ export const COLORS = {
 export const BLANKING_PLATE_USIZES = [12, 10, 8, 6, 4, 2, 1];
 
 // NEW: Default offset for notes from the center of their equipment item
-export const DEFAULT_NOTE_OFFSET_X = WORLD_WIDTH * 0.2; // Example: 20% of world width to the right
+export const DEFAULT_NOTE_OFFSET_X = 100;
 export const DEFAULT_NOTE_OFFSET_Y = 0; // Centered vertically initially

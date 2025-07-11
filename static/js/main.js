@@ -1,4 +1,3 @@
-
 // --- START OF FILE main.js ---
 
 import { fetchInitialData } from './api.js';

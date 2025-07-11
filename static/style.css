@@ -1101,3 +1101,35 @@ details[open]>summary .arrow,
 .dark .canvas-rack-name-editor {
     /* Adjust colors for dark theme if needed */
 }
+
+/* Add this to your style.css or theme.css */
+
+#toggle-notes-btn svg {
+    /* Make the SVG icon size relative to the button's font size */
+    width: 1.2em;
+    height: 1.2em;
+    /* Vertically align the icon with the button's center */
+    vertical-align: middle;
+    /* Ensure the icon takes the color of the button's text */
+    stroke: currentColor;
+}
+
+/* --- Logic for showing/hiding the eye icons --- */
+
+/* When notes are SHOWN (button has .active class), show the OPEN eye */
+#toggle-notes-btn.active .icon-eye-open {
+    display: inline-block;
+}
+
+#toggle-notes-btn.active .icon-eye-closed {
+    display: none;
+}
+
+/* When notes are HIDDEN (button does NOT have .active), show the CLOSED eye */
+#toggle-notes-btn:not(.active) .icon-eye-open {
+    display: none;
+}
+
+#toggle-notes-btn:not(.active) .icon-eye-closed {
+    display: inline-block;
+}

@@ -50,15 +50,10 @@ function processLoadedRacks(savedData) {
             if (!item.shelfItems) item.shelfItems = [];
             if (item.notes === undefined) item.notes = ''; // Ensure notes property exists
 
-            // NEW: Ensure noteOffset exists, convert old notePosition if it exists
+            // NEW: Ensure noteOffset exists with the new default
             if (item.noteOffset === undefined) {
-                // If an old notePosition exists, convert it to a default noteOffset
-                if (item.notePosition === 'left') {
-                    item.noteOffset = { x: -constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
-                } else { // default to 'right' or if notePosition was 'right'
-                    item.noteOffset = { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
-                }
-                // Delete old property if migrating from previous structure
+                item.noteOffset = { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
+                // Clean up old property if it exists
                 delete item.notePosition;
             }
         });

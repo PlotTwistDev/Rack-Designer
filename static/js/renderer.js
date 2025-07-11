@@ -1,5 +1,3 @@
-// --- START OF FILE renderer.js ---
-
 /**
  * @file Contains the drawing helper logic for rendering a single rack.
  * This module is called by the main drawRack function in canvas.js.
@@ -111,14 +109,13 @@ function onSegment(p, q, r) {
  * This function does NOT draw anything, it just provides the metrics.
  * @param {object} item The equipment item containing the notes.
  * @param {object} itemRect The bounding box of the item {x, y, w, h} in world coordinates.
- * @param {number} actualRackXOffset The x-offset of the rack itself in world coordinates.
- * @param {{x: number, y: number}} effectiveNoteOffset The offset {x, y} from the item's center to the note box's center.
+ * @param {{x: number, y: number}} effectiveNoteOffset The offset {x, y} from the item's side to the note box's center.
  * @param {number} fontSize The font size to use for text width calculations.
  * @param {number} currentRenderScale The current canvas render scale.
  * @param {boolean} [calculateOnly=false] If true, skips some ctx setup for lighter calculation (e.g., for hit testing).
  * @returns {object} An object containing noteBox {x,y,w,h} and line coordinates, text alignment details.
  */
-export function getNoteDrawingMetrics(item, itemRect, actualRackXOffset, effectiveNoteOffset, fontSize, currentRenderScale, calculateOnly = false) {
+export function getNoteDrawingMetrics(item, itemRect, effectiveNoteOffset, fontSize, currentRenderScale, calculateOnly = false) {
     const notes = item.notes || '';
     const lines = notes.split('\n').filter(l => l.trim() !== '');
 
@@ -126,11 +123,10 @@ export function getNoteDrawingMetrics(item, itemRect, actualRackXOffset, effecti
         return { noteBox: null, lineCoords: null, textAlignment: 'left', textXOffset: 0, padding: 0 };
     }
 
-    // Use a temporary context for accurate text measurement if not already provided
     let tempCtx;
-    if (!calculateOnly && item.__renderCtx) { // Use actual context if available and not in calculateOnly mode
+    if (!calculateOnly && item.__renderCtx) {
         tempCtx = item.__renderCtx;
-    } else { // Fallback to a new context for calculation or if not provided
+    } else {
         tempCtx = document.createElement('canvas').getContext('2d');
     }
 
@@ -146,44 +142,41 @@ export function getNoteDrawingMetrics(item, itemRect, actualRackXOffset, effecti
     const boxWidth = maxWidth + padding * 2;
     const boxHeight = (lines.length * lineHeight) - (0.2 * fontSize) + padding * 2;
 
-    // Calculate note box position based on item center and effectiveNoteOffset
-    const itemCenterX = itemRect.x + itemRect.w / 2;
+    // --- Note Box Position Calculation ---
+    // This part remains the same, as it's what the drag logic is based on.
+    const itemRightX = itemRect.x + itemRect.w;
     const itemCenterY = itemRect.y + itemRect.h / 2;
-
-    // Note box (top-left) position relative to rack's world (0,0)
-    const noteBoxX = actualRackXOffset + itemCenterX + effectiveNoteOffset.x - boxWidth / 2;
+    const noteBoxX = itemRightX + effectiveNoteOffset.x;
     const noteBoxY = itemCenterY + effectiveNoteOffset.y - boxHeight / 2;
-
     const noteBox = { x: noteBoxX, y: noteBoxY, w: boxWidth, h: boxHeight };
 
-    // --- Calculate line connection points ---
-    // Start of line: Item's center point
-    const lineStartItemPoint = { x: actualRackXOffset + itemCenterX, y: itemCenterY };
-    // End of line: Note box's center point
-    const lineEndNotePoint = { x: noteBoxX + boxWidth / 2, y: noteBoxY + boxHeight / 2 };
+    // --- NEW DYNAMIC LINE CONNECTION LOGIC ---
+    const itemCenterX = itemRect.x + itemRect.w / 2;
+    const noteBoxCenterY = noteBox.y + noteBox.h / 2;
 
-    // Find where the line from the item's center to the note's center intersects the item's bounding box
-    const intersectionOnItem = findLineRectIntersection(lineStartItemPoint, lineEndNotePoint, {
-        x: actualRackXOffset + itemRect.x,
-        y: itemRect.y,
-        w: itemRect.w,
-        h: itemRect.h
-    });
+    let lineStartPoint, lineEndPoint, textAlignment, textXOffset;
 
-    // Find where the line from the note's center to the item's center intersects the note box's bounding box
-    const intersectionOnNoteBox = findLineRectIntersection(lineEndNotePoint, lineStartItemPoint, noteBox);
+    // Decide which side of the ITEM to connect to based on note's position
+    if (noteBox.x + noteBox.w / 2 < itemCenterX) {
+        // Note is to the LEFT of the item
+        lineStartPoint = { x: itemRect.x, y: itemCenterY }; // Connect to item's left side
+        lineEndPoint = { x: noteBox.x + noteBox.w, y: noteBoxCenterY }; // Connect to note's right side
+        textAlignment = 'right';
+        textXOffset = noteBox.w - padding; // Align text to the right
+    } else {
+        // Note is to the RIGHT of the item
+        lineStartPoint = { x: itemRect.x + itemRect.w, y: itemCenterY }; // Connect to item's right side
+        lineEndPoint = { x: noteBox.x, y: noteBoxCenterY }; // Connect to note's left side
+        textAlignment = 'left';
+        textXOffset = padding; // Align text to the left (default)
+    }
 
     const lineCoords = {
-        fromX: intersectionOnItem ? intersectionOnItem.x : lineStartItemPoint.x, // Use intersection point if found
-        fromY: intersectionOnItem ? intersectionOnItem.y : lineStartItemPoint.y,
-        toX: intersectionOnNoteBox ? intersectionOnNoteBox.x : lineEndNotePoint.x, // Use intersection point if found
-        toY: intersectionOnNoteBox ? intersectionOnNoteBox.y : lineEndNotePoint.y
+        fromX: lineStartPoint.x,
+        fromY: lineStartPoint.y,
+        toX: lineEndPoint.x,
+        toY: lineEndPoint.y
     };
-    // --- End line connection calculation ---
-
-    const textAlignment = 'left'; // Always left align text within the note box
-    const textXOffset = padding; // Consistent text padding from left edge for left alignment
-
 
     return { noteBox, lineCoords, textAlignment, fontSize, lineHeight, padding, textXOffset };
 }
@@ -206,69 +199,81 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
     // Get current theme colors from CSS custom properties for dynamic styling.
     const currentStyles = getComputedStyle(document.documentElement);
     const selectionHighlightColor = currentStyles.getPropertyValue('--selection-highlight').trim();
+    const noteSelectionHighlightColor = currentStyles.getPropertyValue('--note-selection-highlight').trim(); // NEW
     const rackRailColor = currentStyles.getPropertyValue('--rack-rail-color').trim();
     const rackInnerColor = currentStyles.getPropertyValue('--rack-inner-color').trim();
     const rackTextColor = currentStyles.getPropertyValue('--rack-text-color').trim();
     const rackLineColor = currentStyles.getPropertyValue('--rack-line-color').trim();
     const rackHoleColor = currentStyles.getPropertyValue('--rack-hole-color').trim();
+    const accentColor = currentStyles.getPropertyValue('--accent-color').trim(); // NEW: For note highlight
     ctx.save();
 
     /**
      * Draws the notes/comments for a given piece of equipment.
      * @param {object} item The equipment item containing the notes.
      * @param {object} itemRect The bounding box of the item {x, y, w, h} in world coordinates.
-     * @param {number} actualRackXOffset The x-offset of the rack itself in world coordinates.
      * @param {boolean} forPdfExport If true, notes are NOT drawn.
      * @param {number} currentRenderScale The current canvas render scale.
      * @returns {object|null} The bounding box of the drawn note, or null if not drawn.
      */
-    const drawNotesFor = (item, itemRect, actualRackXOffset, forPdfExport, currentRenderScale) => {
-        // Skip drawing notes if for PDF export, or in multi-rack view interactive mode, or no notes
+    const drawNotesFor = (item, itemRect, forPdfExport, currentRenderScale) => {
+        // If notes are globally hidden, don't draw them.
+        if (!state.isShowingNotes) {
+            return null;
+        }
+
+        if (state.isMultiRackView && !isExportMode) {
+            return null;
+        }
+
         const notes = item.notes || '';
-        if (forPdfExport || notes.trim() === '' || state.isMultiRackView) return null;
+        if (forPdfExport || notes.trim() === '') return null;
 
         const originalAlpha = ctx.globalAlpha;
-
-        // Store current context for text measurement in getNoteDrawingMetrics
         item.__renderCtx = ctx;
 
-        // Determine effective note offset for drawing (either actual or temp for ghosting)
         let effectiveNoteOffset = item.noteOffset || { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
-
-        // Determine if this specific note is being dragged
         const isCurrentNoteBeingDragged = state.isDraggingNote && state.draggedNoteItemInfo && state.draggedNoteItemInfo.item === item;
 
         if (isCurrentNoteBeingDragged) {
-            // When dragging, draw the original note (item.noteOffset) semi-transparently
             ctx.globalAlpha = 0.5;
         }
 
-        const noteFontSize = Math.max(9, Math.min(16, constants.BASE_UNIT_HEIGHT * 0.35)); // Smaller font for notes to fit more
-        const metrics = getNoteDrawingMetrics(item, itemRect, actualRackXOffset, effectiveNoteOffset, noteFontSize, currentRenderScale, false);
-        if (!metrics.noteBox) return null; // No notes to draw
+        const noteFontSize = Math.max(9, Math.min(16, constants.BASE_UNIT_HEIGHT * 0.35));
+        const metrics = getNoteDrawingMetrics(item, itemRect, effectiveNoteOffset, noteFontSize, currentRenderScale, false);
+        if (!metrics.noteBox) return null;
 
         const { noteBox, lineCoords, textAlignment, lineHeight, padding, textXOffset } = metrics;
         const lines = notes.split('\n').filter(l => l.trim() !== '');
 
-        // Draw the actual note (potentially semi-transparent)
+        // Draw the connector line
         ctx.beginPath();
         ctx.moveTo(lineCoords.fromX, lineCoords.fromY);
         ctx.lineTo(lineCoords.toX, lineCoords.toY);
         ctx.strokeStyle = rackTextColor;
-        ctx.setLineDash([2, 3]); // Reverted: No scaling by currentRenderScale
-        ctx.lineWidth = 1; // Reverted: No scaling by currentRenderScale
+        ctx.setLineDash([2, 3]);
+        ctx.lineWidth = 1;
         ctx.stroke();
         ctx.setLineDash([]);
 
+        // Draw the note box
+        const isEquipmentSelected = state.selectedItems.some(sel => sel.item === item); // Check if the note's parent item is selected
+        const isNoteSelected = state.selectedNotes.some(sel => sel.noteOwner === item); // NEW: Check if the note itself is selected
+
         ctx.fillStyle = rackInnerColor;
         ctx.fillRect(noteBox.x, noteBox.y, noteBox.w, noteBox.h);
+        ctx.strokeStyle = isNoteSelected ? noteSelectionHighlightColor : (isEquipmentSelected ? accentColor : rackTextColor);
+        ctx.lineWidth = isNoteSelected ? 2.5 : (isEquipmentSelected ? 2 : 1);
         ctx.strokeRect(noteBox.x, noteBox.y, noteBox.w, noteBox.h);
+        // Reset stroke style for subsequent drawing
+        ctx.strokeStyle = rackTextColor;
+        ctx.lineWidth = 1;
 
+        // Draw the note text
         ctx.fillStyle = rackTextColor;
         ctx.font = `${noteFontSize}px Inter, sans-serif`;
         ctx.textBaseline = 'top';
         ctx.textAlign = textAlignment;
-
         lines.forEach((line, index) => {
             const textY = noteBox.y + padding + (index * lineHeight);
             ctx.fillText(line, noteBox.x + textXOffset, textY);
@@ -276,66 +281,29 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
 
         // Draw the ghost note if dragging
         if (isCurrentNoteBeingDragged && state.draggedNoteItemInfo.tempNoteOffset) {
-            ctx.globalAlpha = 0.75; // Ghost alpha
-            const ghostMetrics = getNoteDrawingMetrics(item, itemRect, actualRackXOffset, state.draggedNoteItemInfo.tempNoteOffset, noteFontSize, currentRenderScale, false);
-            if (!ghostMetrics.noteBox) {
-                ctx.globalAlpha = originalAlpha; // Reset alpha
-                return noteBox; // Return original note box if ghost couldn't be drawn
+            ctx.globalAlpha = 0.75;
+            const ghostMetrics = getNoteDrawingMetrics(item, itemRect, state.draggedNoteItemInfo.tempNoteOffset, noteFontSize, currentRenderScale, false);
+            if (ghostMetrics.noteBox) {
+                const { noteBox: ghostNoteBox, lineCoords: ghostLineCoords, textAlignment: ghostTextAlignment, textXOffset: ghostTextXOffset } = ghostMetrics;
+                ctx.beginPath();
+                ctx.moveTo(ghostLineCoords.fromX, ghostLineCoords.fromY);
+                ctx.lineTo(ghostLineCoords.toX, ghostLineCoords.toY);
+                ctx.stroke();
+                ctx.fillStyle = rackInnerColor;
+                ctx.fillRect(ghostNoteBox.x, ghostNoteBox.y, ghostNoteBox.w, ghostNoteBox.h);
+                ctx.strokeRect(ghostNoteBox.x, ghostNoteBox.y, ghostNoteBox.w, ghostNoteBox.h);
+                ctx.fillStyle = rackTextColor;
+                ctx.textAlign = ghostTextAlignment;
+                lines.forEach((line, index) => {
+                    const textY = ghostNoteBox.y + padding + (index * lineHeight);
+                    ctx.fillText(line, ghostNoteBox.x + ghostTextXOffset, textY);
+                });
             }
-            const { noteBox: ghostNoteBox, lineCoords: ghostLineCoords, textAlignment: ghostTextAlignment, textXOffset: ghostTextXOffset } = ghostMetrics;
-
-            // Draw ghost line
-            ctx.beginPath();
-            ctx.moveTo(ghostLineCoords.fromX, ghostLineCoords.fromY);
-            ctx.lineTo(ghostLineCoords.toX, ghostLineCoords.toY);
-            ctx.strokeStyle = rackTextColor;
-            ctx.setLineDash([2, 3]); // Reverted: No scaling by currentRenderScale
-            ctx.lineWidth = 1; // Reverted: No scaling by currentRenderScale
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Draw ghost box
-            ctx.fillStyle = rackInnerColor;
-            ctx.fillRect(ghostNoteBox.x, ghostNoteBox.y, ghostNoteBox.w, ghostNoteBox.h);
-            ctx.strokeRect(ghostNoteBox.x, ghostNoteBox.y, ghostNoteBox.w, ghostNoteBox.h);
-
-            // Draw ghost text
-            ctx.fillStyle = rackTextColor;
-            ctx.font = `${noteFontSize}px Inter, sans-serif`;
-            ctx.textBaseline = 'top';
-            ctx.textAlign = ghostTextAlignment;
-
-            lines.forEach((line, index) => {
-                const textY = ghostNoteBox.y + padding + (index * lineHeight);
-                ctx.fillText(line, ghostNoteBox.x + ghostTextXOffset, textY);
-            });
         }
 
-        ctx.globalAlpha = originalAlpha; // Reset alpha
-        return noteBox; // Return the bounding box of the actual note drawn for hit detection
+        ctx.globalAlpha = originalAlpha;
+        return noteBox;
     };
-
-    // --- Draw Ground Shadow ---
-    // The following section is entirely removed to eliminate the shadow.
-    /*
-    const groundLevel = worldHeight;
-    const spotCenterX = xOffset + constants.WORLD_WIDTH / 2;
-    const spotCenterY = groundLevel + constants.BASE_UNIT_HEIGHT * 0.5;
-    const spotRadius = constants.WORLD_WIDTH * 0.7;
-    ctx.save();
-    ctx.translate(spotCenterX, spotCenterY);
-    ctx.scale(1.6, 1);
-    ctx.translate(-spotCenterX, -spotCenterY);
-    const gradient = ctx.createRadialGradient(spotCenterX, spotCenterY, 0, spotCenterX, spotCenterY, spotRadius);
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.08)');
-    gradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.02)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(spotCenterX, spotCenterY, spotRadius, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.restore();
-    */
 
     const railLeft = xOffset + constants.BASE_UNIT_HEIGHT * 1.25;
     const railRight = railLeft + (constants.WORLD_WIDTH - (constants.BASE_UNIT_HEIGHT * 1.25 * 2));
@@ -352,7 +320,7 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
         ctx.fillStyle = rackInnerColor;
         ctx.fillRect(railLeft, 0, railRight - railLeft, worldHeight);
         ctx.strokeStyle = rackLineColor;
-        ctx.lineWidth = 1; // Reverted: No scaling by currentRenderScale
+        ctx.lineWidth = 1;
         ctx.stroke();
     };
     const drawRackFrontRails = () => {
@@ -360,14 +328,22 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
         ctx.fillRect(xOffset, 0, railLeft - xOffset, worldHeight);
         ctx.fillRect(railRight, 0, (xOffset + constants.WORLD_WIDTH) - railRight, worldHeight);
         const sideLabelFontSize = Math.max(8, Math.min(12, constants.BASE_UNIT_HEIGHT * 0.22));
+        // NEW: Define a consistent padding for the numbers inside the rails.
+        const railPadding = (railLeft - xOffset) * 0.1;
         ctx.textBaseline = 'middle';
         for (let i = 0; i < rackHeightU; i++) {
             const y = worldHeight - (i + 1) * constants.BASE_UNIT_HEIGHT;
             const yCenter = y + constants.BASE_UNIT_HEIGHT / 2;
+            const uLabel = `${i + 1}U`;
+
             ctx.fillStyle = rackTextColor;
             ctx.font = `${sideLabelFontSize}px sans-serif`;
+            // Draw on the Left Rail
             ctx.textAlign = 'left';
-            ctx.fillText(`${i + 1}U`, xOffset + (railLeft - xOffset) * 0.1, yCenter);
+            ctx.fillText(uLabel, xOffset + railPadding, yCenter);
+            // Draw on the Right Rail
+            ctx.textAlign = 'right';
+            ctx.fillText(uLabel, (xOffset + constants.WORLD_WIDTH) - railPadding, yCenter);
             const holeRadius = Math.max(1, constants.BASE_UNIT_HEIGHT * 0.05);
             const holeSpacing = constants.BASE_UNIT_HEIGHT / 3;
             const initialOffset = constants.BASE_UNIT_HEIGHT / 6;
@@ -384,64 +360,59 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
     const drawStandardAndShelfItems = () => {
         standardItems.forEach(item => {
             const isSelected = state.selectedItems.some(sel => sel.item === item);
-            if (!isExportMode && state.isDraggingSelection && isSelected) return; // Only skip drag ghost in interactive mode
+            if (!isExportMode && state.isDraggingSelection && isSelected) return;
             const y = item.y * constants.BASE_UNIT_HEIGHT;
             const itemHeight = item.u * constants.BASE_UNIT_HEIGHT;
-            // Use state.isShowingRear for stencil selection, unless in export mode where this choice can be overridden if needed
             const currentStencilCache = state.isShowingRear ? state.stencilRearCache : state.stencilCache;
             const stencilKey = state.isShowingRear ? (item.stencilRear || `${item.stencil}-rear` || 'generic-equipment-rear') : (item.stencil || 'generic-equipment');
             let stencilImage = currentStencilCache.get(stencilKey);
             if (stencilImage && stencilImage.complete) { ctx.drawImage(stencilImage, eqLeft, y, eqWidth, itemHeight); } else { ctx.fillStyle = getColorByType(item.type); ctx.fillRect(eqLeft, y, eqWidth, itemHeight); }
-            if (!isExportMode && isSelected) { ctx.fillStyle = selectionHighlightColor; ctx.fillRect(eqLeft, y, eqWidth, itemHeight); } // Only highlight in interactive mode
-            if (!state.isShowingRear && item.type !== 'shelf' && !item.side) { // Only draw label for front view
+            if (!isExportMode && isSelected) { ctx.fillStyle = selectionHighlightColor; ctx.fillRect(eqLeft, y, eqWidth, itemHeight); }
+            if (!state.isShowingRear && item.type !== 'shelf' && !item.side) {
                 const textX = eqLeft + eqWidth / 2;
                 const textY = y + itemHeight / 2;
                 ctx.font = `bold ${itemLabelFontSize}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
-                ctx.lineWidth = 4; // Reverted: No scaling by currentRenderScale
+                ctx.lineWidth = 4;
                 ctx.lineJoin = 'round';
                 ctx.strokeText(item.label, textX, textY);
                 ctx.fillStyle = 'white';
                 ctx.fillText(item.label, textX, textY);
             }
-            // Pass isDraggingNote to drawNotesFor
-            drawNotesFor(item, { x: eqLeft, y, w: eqWidth, h: itemHeight }, xOffset, forPdfExport, currentRenderScale); // Pass xOffset, forPdfExport, currentRenderScale
+            drawNotesFor(item, { x: eqLeft, y, w: eqWidth, h: itemHeight }, forPdfExport, currentRenderScale);
             if (item.shelfItems) {
                 item.shelfItems.forEach(shelfItem => {
                     const shelfIsSelected = state.selectedItems.some(sel => sel.item === shelfItem);
-                    if (!isExportMode && state.isDraggingSelection && shelfIsSelected) return; // Only skip drag ghost in interactive mode
+                    if (!isExportMode && state.isDraggingSelection && shelfIsSelected) return;
                     const shelfStencilKey = state.isShowingRear ? (shelfItem.stencilRear || `${shelfItem.stencil}-rear` || 'generic-shelf-item-rear') : (shelfItem.stencil || 'generic-shelf-item');
                     const shelfStencil = currentStencilCache.get(shelfStencilKey);
                     const drawW = shelfItem.size.width * constants.SHELF_ITEM_RENDER_SCALE;
                     const drawH = shelfItem.size.height * constants.SHELF_ITEM_RENDER_SCALE;
                     const drawX = eqLeft + shelfItem.x;
-                    const drawY = y - drawH; // Position shelf item above the shelf
+                    const drawY = y - drawH;
                     if (shelfStencil && shelfStencil.complete) { ctx.drawImage(shelfStencil, drawX, drawY, drawW, drawH); } else { ctx.fillStyle = getColorByType(shelfItem.type); ctx.fillRect(drawX, drawY, drawW, drawH); }
-                    if (!isExportMode && shelfIsSelected) { ctx.fillStyle = selectionHighlightColor; ctx.fillRect(drawX, drawY, drawW, drawH); } // Only highlight in interactive mode
-                    // Pass isDraggingNote to drawNotesFor
-                    drawNotesFor(shelfItem, { x: drawX, y: drawY, w: drawW, h: drawH }, xOffset, forPdfExport, currentRenderScale); // Pass xOffset, forPdfExport, currentRenderScale
+                    if (!isExportMode && shelfIsSelected) { ctx.fillStyle = selectionHighlightColor; ctx.fillRect(drawX, drawY, drawW, drawH); }
+                    drawNotesFor(shelfItem, { x: drawX, y: drawY, w: drawW, h: drawH }, forPdfExport, currentRenderScale);
                 });
             }
         });
     };
     const drawVPDUs = () => {
         vpdus.forEach(pdu => {
-            if (!isExportMode && state.isDraggingSelection && state.selectedItems.some(sel => sel.item === pdu)) return; // Only skip drag ghost in interactive mode
+            if (!isExportMode && state.isDraggingSelection && state.selectedItems.some(sel => sel.item === pdu)) return;
             const rect = getPduWorldRect(pdu);
             ctx.fillStyle = '#333';
             ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
             ctx.strokeStyle = '#444';
-            ctx.lineWidth = 1; // Reverted: No scaling by currentRenderScale
+            ctx.lineWidth = 1;
             ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-            if (!isExportMode && state.selectedItems.some(sel => sel.item === pdu)) { ctx.fillStyle = selectionHighlightColor; ctx.fillRect(rect.x, rect.y, rect.w, rect.h); } // Only highlight in interactive mode
+            if (!isExportMode && state.selectedItems.some(sel => sel.item === pdu)) { ctx.fillStyle = selectionHighlightColor; ctx.fillRect(rect.x, rect.y, rect.w, rect.h); }
         });
     };
 
     drawRackBackPanel();
-    // Decide front/rear based on state.isShowingRear for interactive view
-    // For export, we assume the user intends to export what they see, or specific orientation.
     if (state.isShowingRear) {
         drawStandardAndShelfItems();
         drawVPDUs();

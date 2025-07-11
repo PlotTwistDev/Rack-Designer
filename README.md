@@ -26,7 +26,7 @@ A versatile web application for designing and visualizing server rack layouts. T
 *   **Theme Switching:** Toggle between light and dark themes.
 
 ## 📁 Project Structure
-```
+
 ├── static/
 │   ├── index.html         # Main HTML template
 │   ├── style.css          # Core styling
@@ -43,7 +43,7 @@ A versatile web application for designing and visualizing server rack layouts. T
 ├── server.py              # Backend server & API definitions
 ├── requirements.txt       # Python dependencies
 └── README.md              # Project documentation
-```
+
 ## 🛠️ Technologies Used
 
 *   **Backend:**
@@ -143,11 +143,3 @@ Follow these instructions to set up and run the Rack Designer application locall
 
 6.  **Theme Switcher:**
     *   Located on the bottom-right, allows toggling between Light (☀️) and Dark (🌙) mode.
-
-## Contributing
-
-Contributions are welcome! Please fork the repository and open a pull request with your changes. For major features or breaking changes, open an issue first to discuss your proposal.
-
-## License
-
-This project is licensed under the MIT License.
