@@ -88,8 +88,8 @@ export function drawRack() {
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color-primary').trim();
 
             // Reverted: nameFontSize now scales with world (zoom)
-            const nameFontSize = constants.BASE_UNIT_HEIGHT * 0.5;
-            ctx.font = `bold ${nameFontSize}px sans - serif`;
+            const nameFontSize = constants.BASE_UNIT_HEIGHT * 0.65; // INCREASED FONT SIZE
+            ctx.font = `bold ${nameFontSize}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const nameText = rackData.name;
@@ -105,24 +105,27 @@ export function drawRack() {
             const textHeight = nameFontSize; // Use the actual size without inverse scaling
             const nameCenterY = yOffset + headerY;
             // Reverted: nameBounds padding and dimensions now scale with world (zoom)
+            // INCREASED PADDING FOR LARGER EDIT AREA
+            const namePaddingHorizontal = 20;
+            const namePaddingVertical = 10;
             rackData.nameBounds = {
-                x: xOffset + constants.WORLD_WIDTH / 2 - textWidth / 2 - 5,
-                y: nameCenterY - textHeight / 2 - 5,
-                w: textWidth + 10,
-                h: textHeight + 10
+                x: xOffset + constants.WORLD_WIDTH / 2 - textWidth / 2 - namePaddingHorizontal,
+                y: nameCenterY - textHeight / 2 - namePaddingVertical,
+                w: textWidth + namePaddingHorizontal * 2,
+                h: textHeight + namePaddingVertical * 2,
             };
 
 
             // Draw delete button and store its bounds for hit detection.
             // Reverted: deleteBtnSize now scales with world (zoom)
-            const deleteBtnSize = constants.BASE_UNIT_HEIGHT * 0.8;
+            const deleteBtnSize = constants.BASE_UNIT_HEIGHT * 1.0; // INCREASED ICON SIZE
             rackData.deleteBtnBounds = {
                 x: xOffset + constants.WORLD_WIDTH - deleteBtnSize,
-                y: yOffset + headerY - deleteBtnSize * 0.8,
+                y: yOffset + headerY - deleteBtnSize / 2, // Vertically center the icon
                 w: deleteBtnSize,
                 h: deleteBtnSize
             };
-            ctx.font = `${deleteBtnSize}px sans - serif`;
+            ctx.font = `${deleteBtnSize}px sans-serif`;
             ctx.fillText('🗑️', xOffset + constants.WORLD_WIDTH - deleteBtnSize + deleteBtnSize / 2, headerY);
             ctx.restore();
         });
@@ -147,7 +150,7 @@ export function drawRack() {
                 ctx.fill();
 
                 ctx.fillStyle = 'white';
-                ctx.font = `bold ${noteFontSize}px sans - serif`;
+                ctx.font = `bold ${noteFontSize}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(label, x, y + 1);
@@ -177,7 +180,7 @@ export function drawRack() {
 
                 // 1. Calculate layout metrics and positions first
                 const noteLayouts = itemsWithNotes.map(item => {
-                    ctx.font = `bold ${noteFontSize}px Inter, sans - serif`;
+                    ctx.font = `bold ${noteFontSize}px Inter, sans-serif`;
 
                     const finalLines = [];
                     const noteMaxWidth = constants.WORLD_WIDTH;
@@ -505,9 +508,9 @@ export function drawRackForExport(targetCtx, racksToDraw, options) {
             const headerY = -constants.BASE_UNIT_HEIGHT * 1.5;
             targetCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color-primary').trim();
             const nameFontSize = constants.BASE_UNIT_HEIGHT * 0.5;
-            targetCtx.font = `bold ${nameFontSize}px sans - serif`;
+            targetCtx.font = `bold ${nameFontSize}px sans-serif`;
             targetCtx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            targetCtx.textBaseline = 'middle';
             const nameText = rackData.name;
             targetCtx.fillText(nameText, xOffset + constants.WORLD_WIDTH / 2, headerY);
             targetCtx.restore();

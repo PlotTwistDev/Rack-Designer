@@ -2174,12 +2174,11 @@ export function populateEquipmentList(categories) {
     const emptyImg = new Image();
     emptyImg.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
 
+    // MODIFIED: Removed 'Shelf Items' and 'Blanking Panels'
     const openCategories = [
         'Servers & Compute',
         'Storage',
-        'Networking',
-        'Shelf Items',
-        'Blanking Panels'
+        'Networking'
     ];
     const arrowSVGString = `
       <svg class="arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2636,8 +2635,8 @@ export function showCanvasRackNameEditor(rackIndex, rackData) {
     input.style.height = `${screenHeight}px`;
 
     // Adjust font size based on the current scale to match canvas text visually
-    // The original canvas font size was `constants.BASE_UNIT_HEIGHT * 0.5`
-    input.style.fontSize = `${constants.BASE_UNIT_HEIGHT * 0.5 * state.scale}px`;
+    // The canvas font size is now `constants.BASE_UNIT_HEIGHT * 0.65`
+    input.style.fontSize = `${constants.BASE_UNIT_HEIGHT * 0.65 * state.scale}px`;
     // Vertically center the text within the input field
     input.style.lineHeight = `${screenHeight}px`;
     input.style.textAlign = 'center';
