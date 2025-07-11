@@ -316,6 +316,8 @@ export function drawRack() {
         ctx.globalAlpha = 0.75;
 
         const currentStencilCache = state.isShowingRear ? state.stencilRearCache : state.stencilCache;
+        const itemLabelFontSize = Math.max(9, Math.min(16, constants.BASE_UNIT_HEIGHT * 0.35));
+
         state.selectedItems.forEach(sel => {
             const { item } = sel;
             if (item.tempY === undefined && item.tempX === undefined) return;
@@ -365,6 +367,22 @@ export function drawRack() {
             } else {
                 ctx.fillStyle = getColorByType(item.type);
                 ctx.fillRect(ghostX, ghostY, ghostW, ghostH);
+            }
+
+            // MODIFIED: Draw the label on the ghost image
+            if (!state.isShowingRear && item.type !== 'shelf' && item.type !== 'shelf-item' && item.type !== 'v-pdu') {
+                const textX = ghostX + ghostW / 2;
+                const textY = ghostY + ghostH / 2;
+
+                ctx.font = `bold ${itemLabelFontSize}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.lineWidth = 4;
+                ctx.lineJoin = 'round';
+                ctx.strokeText(item.label, textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText(item.label, textX, textY);
             }
         });
         ctx.restore();
@@ -489,7 +507,7 @@ export function drawRackForExport(targetCtx, racksToDraw, options) {
             const nameFontSize = constants.BASE_UNIT_HEIGHT * 0.5;
             targetCtx.font = `bold ${nameFontSize}px sans - serif`;
             targetCtx.textAlign = 'center';
-            targetCtx.textBaseline = 'middle';
+            ctx.textBaseline = 'middle';
             const nameText = rackData.name;
             targetCtx.fillText(nameText, xOffset + constants.WORLD_WIDTH / 2, headerY);
             targetCtx.restore();
