@@ -4,29 +4,37 @@ A versatile web application for designing and visualizing server rack layouts. T
 
 ## ✨ Features
 
-*   **Interactive Drag-and-Drop:** Easily add, remove, and rearrange equipment within your racks.
-*   **Comprehensive Equipment Library:** Includes a variety of servers, storage, networking devices, KVMs, power units (PDUs, UPS), monitors, and specialized shelf items.
-*   **Front & Rear Views:** Toggle between front and rear perspectives of your rack(s) to visualize cabling and rear-mounted components.
-*   **Multi-Rack Management:**
-    *   Add and delete multiple racks.
-    *   Navigate between individual racks or view all racks in an overview mode.
-    *   Reorder racks by dragging their names in multi-rack view.
-    *   Rename racks directly on the canvas (double-click on rack name in multi-rack view) or via the sidebar in single rack view.
-*   **Flexible Rack Sizes:** Adjust the U-height of individual racks (24U, 42U, 48U).
-*   **Contextual Actions:** Right-click on items or empty rack space for quick actions:
-    *   **Edit Notes:** Add custom notes to any equipment item. Notes can be dragged on the canvas for repositioning.
-    *   **Fill with Blanking Plates:** Automatically populate empty U-spaces in a rack with appropriate blanking panels.
-    *   **Duplicate:** Quickly duplicate selected equipment vertically (up or down).
-*   **Save & Load Layouts:** Save your designs with custom filenames and load them back later. Unsaved changes are detected before closing the browser.
-*   **Export Options:** Export your rack layouts to:
-    *   **PDF:** Generate a multi-page PDF document, with each rack on a separate page, including equipment details and notes in a separate column.
-    *   **Image (PNG):** Export a high-resolution image of your entire layout.
-*   **Intuitive Navigation:** Pan across the canvas with Shift + Left-click or Middle-click, and zoom in/out with the mouse wheel or dedicated buttons.
-*   **Responsive Design:** Adapts to different screen sizes, with zoom-to-fit functionality.
-*   **Theme Switching:** Toggle between light and dark themes.
+-   **Interactive Drag-and-Drop:** Easily add, remove, and rearrange equipment within your racks.
+-   **Comprehensive Equipment Library:** Includes a variety of servers, storage, networking devices, KVMs, power units (PDUs, UPS), monitors, and specialized shelf items.
+-   **Front & Rear Views:** Toggle between front and rear perspectives of your rack(s) to visualize cabling and rear-mounted components.
+-   **Multi-Rack Management:**
+    -   Add and delete multiple racks.
+    -   Navigate between individual racks or view all racks in an overview mode.
+    -   Reorder racks by dragging their names in multi-rack view.
+    -   Rename racks directly on the canvas (double-click on rack name in multi-rack view) or via the sidebar in single rack view.
+-   **Flexible Rack Sizes:** Adjust the U-height of individual racks (24U, 42U, 48U).
+-   **Detailed Annotation & Interaction:**
+    -   Add custom notes to any equipment item. Notes are visually connected to their parent item.
+    -   Drag individual notes on the canvas to reposition them.
+    -   Independently select notes with `Alt`+`Click` or marquee select with `Alt`+`Drag`.
+    -   Drag a selection of notes to move them all together.
+-   **Contextual Actions:** Right-click on items or notes for quick actions:
+    -   **Edit Notes:** Opens the info panel to edit an item's notes.
+    -   **Align Horizontally:** Align multiple selected notes for a cleaner diagram.
+    -   **Fill with Blanking Plates:** Automatically populate empty U-spaces in a rack.
+    -   **Duplicate:** Quickly duplicate selected equipment vertically.
+-   **Save & Load Layouts:** Save your designs to the server with custom filenames and load them back later. Unsaved changes are detected before closing the browser.
+-   **Powerful Export Options:**
+    -   **Export to PDF:** Generate a multi-page PDF, with each rack on its own page, including an itemized list of equipment and notes.
+    -   **Export to Image (PNG):**
+        -   Export all racks together (with or without notes).
+        -   Export each rack as an individual image (with notes).
+        -   Choose from Standard, High, or Ultra resolution options.
+-   **Intuitive Navigation:** Pan across the canvas with `Shift`+`Drag` or Middle-click, and zoom in/out with the mouse wheel or dedicated buttons.
+-   **Theme Switching:** Toggle between light and dark themes.
 
 ## 📁 Project Structure
-
+```
 ├── static/
 │   ├── index.html         # Main HTML template
 │   ├── style.css          # Core styling
@@ -43,7 +51,7 @@ A versatile web application for designing and visualizing server rack layouts. T
 ├── server.py              # Backend server & API definitions
 ├── requirements.txt       # Python dependencies
 └── README.md              # Project documentation
-
+```
 ## 🛠️ Technologies Used
 
 *   **Backend:**
@@ -103,43 +111,69 @@ Follow these instructions to set up and run the Rack Designer application locall
 
     The server will automatically create a `racks/` directory in the project root to store your saved layout files (`.json`).
 
-## 🖥️ Usage
+## 🖥️ Usage Guide
 
-1.  **Adding Equipment:**
-    *   On the left sidebar, browse through equipment categories.
-    *   **Drag-and-drop** items from the list onto the rack canvas.
-    *   Standard equipment (servers, switches, etc.) snaps to the nearest available U-slot.
-    *   Vertical PDUs snap to the left or right rail.
-    *   Shelf items can be placed on compatible "shelf" units (e.g., a "1U Shelf" equipment item).
+### Basic Navigation & Viewing
 
-2.  **Interacting with Items:**
-    *   **Select:** Click on an item to select it. Hold `Ctrl` (or `Cmd` on Mac) and click to select multiple items.
-    *   **Move:** Drag selected items to new positions.
-    *   **Delete:** Select an item (or multiple) and press `Delete` or `Backspace`.
-    *   **Context Menu:** Right-click on an item or empty rack space to open a context-specific menu for actions like `Edit Notes...`, `Fill with Blanking Plates`, or `Duplicate`.
-    *   **Edit Notes:** When an item is selected, its details (including notes) appear in the right-hand info panel. You can type notes there or double click the note box on canvas to reposition it.
+-   **Pan Canvas:** Hold `Shift` and drag with the left mouse button, or simply drag with the middle mouse button.
+-   **Zoom Canvas:** Use the mouse wheel, or click the dedicated zoom buttons (`Fit`, `0.5x`, `1x`, `2x`) in the left sidebar.
+-   **Toggle Front/Rear View:** Use the "Show Rear" / "Show Front" button in the left sidebar to switch the perspective for all racks.
+-   **Toggle Theme:** Switch between Light (☀️) and Dark (🌙) modes using the button in the bottom-right controls.
 
-3.  **Rack Controls (bottom-right):**
-    *   **Rack Navigation:** Use `◀` and `▶` to switch between racks when in single-rack view.
-    *   **Rack Name:** Click to rename the current rack (single-rack view) or double-click directly on the name (multi-rack view).
-    *   **Toggle Layout View (`🔲` / `🔳`):** Switch between viewing a single active rack and an overview of all racks.
-    *   **Add Rack (`+`):** Add a new empty rack.
-    *   **Delete Rack (`🗑️`):** Delete the current active rack.
+### Managing Equipment & Notes
 
-4.  **Sidebar Controls (bottom-left):**
-    *   **Size:** Change the U-height of the currently active rack.
-    *   **View:** Toggle between **Show Front** and **Show Rear** views of the equipment.
-    *   **Zoom:** Adjust the canvas zoom level, including a "Fit" option to fit the entire layout on screen.
-    *   **Save:** Saves the current layout. If it's a new layout, it will prompt for a filename. If a file is already loaded, it will overwrite it.
-    *   **Load:** Opens a modal to load a previously saved layout.
-    *   **Reset / New:** Starts a fresh, blank layout (prompts for confirmation if there are unsaved changes).
-    *   **Export to PDF:** Generates a PDF of all racks with details.
-    *   **Export to Image:** Generates a PNG image of your current layout.
+-   **Adding Equipment:** Drag items from the categorized list in the left sidebar and drop them onto a rack.
+    -   Standard equipment (servers, switches, etc.) snaps to the nearest available U-slot.
+    -   Vertical PDUs snap to the left or right rail.
+    -   Shelf items can only be placed on compatible "shelf" units.
+-   **Selecting Equipment:**
+    -   Click an item to select it. This will display its details in the right-hand Info Panel.
+    -   Hold `Ctrl` and click to select multiple items.
+    -   Click and drag on an empty area of the canvas to create a marquee box for multi-selection.
+-   **Selecting Notes:**
+    -   Hold `Alt` and click a note to select it independently of its equipment.
+    -   Hold `Alt`+`Ctrl` to add or remove notes from the current selection.
+    -   Hold `Alt` and drag a marquee box to select multiple notes.
+-   **Moving Items & Notes:**
+    -   Once selected, click and drag any item in a selection to move the entire group.
+    -   Likewise, click and drag any selected note to move the entire group of selected notes.
+-   **Editing & Deleting:**
+    -   Press `Delete` or `Backspace` to delete all selected equipment.
+    -   Double-click an item or its note to open the **Info Panel** for editing its label and text notes.
+-   **Context Menu (Right-Click):**
+    -   **On an Item:** Opens a menu to `Duplicate` the item up or down, or `Fill with Blanking Plates`.
+    -   **On a Note:** Opens a menu to `Align Horizontally` with other selected notes.
 
-5.  **Info Panel (right sidebar):**
-    *   Displays details of the currently selected equipment item.
-    *   Allows editing the item's label and notes.
-    *   Can be collapsed/expanded using the `Hide Info` / `Show Info` buttons.
+### Managing Racks
 
-6.  **Theme Switcher:**
-    *   Located on the bottom-right, allows toggling between Light (☀️) and Dark (🌙) mode.
+The rack controls are located in the floating panel at the bottom right of the canvas.
+
+-   **Navigate Racks:** Use the `◀` and `▶` buttons to switch between racks (only available in single-rack view).
+-   **Add / Delete Racks:** Use the `+` button to add a new rack and the `🗑️` button to delete the currently active rack.
+-   **Rename Racks:**
+    -   In single-rack view, click the name in the control panel to edit it.
+    -   In multi-rack view, double-click directly on the rack's name above the rack itself.
+-   **Toggle Layout View:** Use the `🔲` / `🔳` button to switch between the focused single-rack view and the multi-rack overview.
+-   **Change Rack Size:** In single-rack view, use the "Size" dropdown in the left sidebar to change the U-height of the current rack.
+
+### Saving, Loading & Exporting
+
+These controls are located in the left sidebar.
+
+-   **Save:** Saves the current layout. If it's a new layout, it will prompt for a filename. If a file is already loaded, it will silently overwrite the existing file.
+-   **Save As...:** Opens a modal to save the current layout under a new or different filename.
+-   **Load:** Opens a modal to browse and load a previously saved layout.
+-   **Reset / New:** Starts a fresh, blank layout (prompts for confirmation if there are unsaved changes).
+-   **Export to PDF:** Generates a multi-page PDF of all racks with details.
+-   **Export to Image:** Opens a modal with options to generate high-resolution PNG images of your layout.
+
+### Keyboard Shortcuts
+
+| Shortcut                | Action                                                |
+| :---------------------- | :---------------------------------------------------- |
+| `Ctrl` + `C`            | Copies the selected equipment to the clipboard.       |
+| `Ctrl` + `X`            | Cuts the selected equipment to the clipboard.         |
+| `Ctrl` + `V`            | Pastes clipboard contents into the active rack.       |
+| `Ctrl` + `S`            | Saves the current layout (or opens "Save As" if new). |
+| `Delete` / `Backspace`  | Deletes the currently selected equipment.             |
+| `Alt` + (Mouse Action)  | Activates note-specific selection and dragging.       |
