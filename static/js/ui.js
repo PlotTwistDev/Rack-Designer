@@ -345,19 +345,7 @@ const handleMouseDown = (e) => {
     // Then check standard items (including V-PDUs)
     if (!clickedSelection) {
         // V-PDU hit test
-        const vPduHit = rackData.equipment.find(it => {
-            if (it.type === 'v-pdu') {
-                const pduRectX = it.side === 'left'
-                    ? railLeft
-                    : constants.WORLD_WIDTH - railLeft - constants.BASE_UNIT_HEIGHT * 0.75;
-                return (
-                    localX >= pduRectX &&
-                    localX <= pduRectX + constants.BASE_UNIT_HEIGHT * 0.75 &&
-                    localY >= 0 && localY <= rackData.heightU * constants.BASE_UNIT_HEIGHT
-                );
-            }
-            return false;
-        });
+        const vPduHit = rackData.equipment.find(it => it.type === 'v-pdu' && utils.isVpduUnderMouse(it, localX, localY));
         if (vPduHit) {
             clickedSelection = { item: vPduHit, parent: null, rackIndex };
         } else {
@@ -865,16 +853,27 @@ const handleDrop = (e) => {
             state.setSelectedItems([{ item: newItem, parent: newParent, rackIndex }]); // Select the new item
         }
     } else if (type === 'v-pdu') {
+        const uStr = e.dataTransfer.getData('u');
+        const u = uStr ? parseInt(uStr, 10) : rackData.heightU;
         const railLeft = constants.BASE_UNIT_HEIGHT * 1.25;
         const railRight = constants.WORLD_WIDTH - railLeft;
         const rackCenterline = railLeft + (railRight - railLeft) / 2;
         const targetSide = (localX < rackCenterline) ? 'left' : 'right';
-        if (!rack.some(it => it.type === 'v-pdu' && it.side === targetSide)) {
-            newItem = { y: 0, u: rackData.heightU, label, type, stencil, stencilRear, side: targetSide, notes: '', noteOffset: { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y } }; // Initialize notes AND noteOffset
+
+        const existingPdusOnSide = rack.filter(it => it.type === 'v-pdu' && it.side === targetSide);
+        const initialY = Math.max(0, Math.min(rackData.heightU - u, Math.floor(localY / constants.BASE_UNIT_HEIGHT)));
+        const newY = utils.findAvailableY(u, initialY, existingPdusOnSide, rackData.heightU);
+
+        if (newY !== -1) {
+            newItem = {
+                y: newY, u, label, type, stencil, stencilRear, side: targetSide,
+                notes: '', noteOffset: { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y },
+                isFullHeight: !uStr // Flag to identify full-height PDUs for pasting
+            };
             rack.push(newItem);
             state.setSelectedItems([{ item: newItem, parent: null, rackIndex }]); // Select the new item
         } else {
-            alert(`A V-PDU is already on the ${targetSide} side of this rack.`);
+            alert(`No available space for a ${u}U V-PDU on the ${targetSide} side of this rack.`);
         }
     } else { // Handle standard equipment drop (not shelf-item or v-pdu)
         const u = parseInt(e.dataTransfer.getData('u'), 10);
@@ -985,17 +984,24 @@ function handlePaste() {
     }
     if (clipboardVPDUs.length > 0) {
         clipboardVPDUs.forEach(pduToPaste => {
-            const sideIsTaken = targetRack.equipment.some(it => it.type === 'v-pdu' && it.side === pduToPaste.side);
-            if (!sideIsTaken) {
-                const newItem = JSON.parse(JSON.stringify(pduToPaste));
-                newItem.u = targetRack.heightU; // VPDUs typically span the full height of the rack
+            const newItem = JSON.parse(JSON.stringify(pduToPaste));
+            // If it's a full-height PDU, adjust its height to the target rack.
+            if (newItem.isFullHeight) {
+                newItem.u = targetRack.heightU;
+            }
+
+            const existingPdusOnSide = targetRack.equipment.filter(it => it.type === 'v-pdu' && it.side === newItem.side);
+            const pasteY = utils.findAvailableY(newItem.u, newItem.y, existingPdusOnSide, targetRack.heightU);
+
+            if (pasteY !== -1) {
+                newItem.y = pasteY;
                 if (!newItem.notes) newItem.notes = ''; // Ensure notes property exists
                 if (newItem.noteOffset === undefined) newItem.noteOffset = { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y }; // Ensure noteOffset exists for pasted items
                 targetRack.equipment.push(newItem);
                 newSelectedItems.push({ item: newItem, parent: null, rackIndex: state.activeRackIndex });
                 somethingPasted = true;
             } else {
-                alert(`Cannot paste V-PDU on ${pduToPaste.side} side: already occupied.`);
+                alert(`Cannot paste V-PDU on ${newItem.side} side: no available space.`);
             }
         });
     }
@@ -1091,19 +1097,7 @@ const handleDoubleClick = (e) => {
     // Then check standard items (including V-PDUs)
     if (!clickedSelection) {
         // V-PDU hit test
-        const vPduHit = rackData.equipment.find(it => {
-            if (it.type === 'v-pdu') {
-                const pduRectX = it.side === 'left' ?
-                    railLeft :
-                    constants.WORLD_WIDTH - railLeft - constants.BASE_UNIT_HEIGHT * 0.75;
-                return (
-                    localX >= pduRectX &&
-                    localX <= pduRectX + constants.BASE_UNIT_HEIGHT * 0.75 &&
-                    localY >= 0 && localY <= rackData.heightU * constants.BASE_UNIT_HEIGHT
-                );
-            }
-            return false;
-        });
+        const vPduHit = rackData.equipment.find(it => it.type === 'v-pdu' && utils.isVpduUnderMouse(it, localX, localY));
         if (vPduHit) {
             clickedSelection = { item: vPduHit, parent: null, rackIndex };
         } else {
@@ -1266,7 +1260,7 @@ const handleContextMenu = (e) => {
 
     // 2. V-PDU hit test
     if (!clickedItem) {
-        clickedItem = rackInfo.rackData.equipment.find(it => it.type === 'v-pdu' && utils.isVpduUnderMouse(it, rackInfo.localX, rackInfo.localY, rackInfo.rackData.heightU));
+        clickedItem = rackInfo.rackData.equipment.find(it => it.type === 'v-pdu' && utils.isVpduUnderMouse(it, rackInfo.localX, rackInfo.localY));
         if (clickedItem) clickedItem = { item: clickedItem, parent: null, rackIndex: rackInfo.rackIndex };
     }
 
@@ -2238,7 +2232,8 @@ export function populateEquipmentList(categories) {
                     logicalH = itData.size.height * constants.SHELF_ITEM_RENDER_SCALE;
                 } else if (isVPDU) {
                     logicalW = constants.BASE_UNIT_HEIGHT * 0.75;
-                    logicalH = constants.BASE_UNIT_HEIGHT * (state.racks[state.activeRackIndex]?.heightU || 42);
+                    const pduHeightU = (itData.u && itData.u !== 'full') ? itData.u : (state.racks[state.activeRackIndex]?.heightU || 42);
+                    logicalH = constants.BASE_UNIT_HEIGHT * pduHeightU;
                 } else {
                     logicalW = constants.WORLD_WIDTH
                         - (constants.BASE_UNIT_HEIGHT * 1.25 * 2)
@@ -2307,6 +2302,7 @@ export function populateEquipmentList(categories) {
 
                 // 8) Make it follow the cursor
                 const move = ev => {
+                    ev.preventDefault(); // Allow drop and get correct coordinates
                     ghost.style.top = `${ev.clientY - ghostH / 2}px`;
                     ghost.style.left = `${ev.clientX - ghostW / 2}px`;
                 };
@@ -2591,7 +2587,7 @@ export function updateInfoPanel() {
         delBtn.addEventListener('click', () => deleteSelectedItem()); // MODIFIED: Call deleteSelectedItem without args
         actionsDiv.appendChild(delBtn);
 
-        contentDiv.appendChild(actionsDiv);
+        contentDiv.appendChild(contentDiv);
         details.appendChild(contentDiv);
         infoPanelContent.appendChild(details);
     });

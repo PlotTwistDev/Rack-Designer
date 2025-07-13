@@ -1,5 +1,3 @@
-// --- START OF FILE utils.js ---
-
 import * as constants from './constants.js';
 import * as state from './state.js';
 
@@ -92,17 +90,17 @@ export function findValidShelfParent(localY, droppedItem, equipment, localX) {
  * @param {object} pduItem The V-PDU item data.
  * @param {number} localX Mouse X coordinate relative to rack's top-left (0,0).
  * @param {number} localY Mouse Y coordinate relative to rack's top-left (0,0).
- * @param {number} rackHeightU Height of the current rack in U units.
  * @returns {boolean} True if the V-PDU is under the mouse, false otherwise.
  */
-export function isVpduUnderMouse(pduItem, localX, localY, rackHeightU) {
+export function isVpduUnderMouse(pduItem, localX, localY) {
     const railLeft = constants.BASE_UNIT_HEIGHT * 1.25;
     const pduRectWidth = constants.BASE_UNIT_HEIGHT * 0.75;
     const pduRectX = pduItem.side === 'left' ? railLeft : constants.WORLD_WIDTH - railLeft - pduRectWidth;
-    const pduRectHeight = rackHeightU * constants.BASE_UNIT_HEIGHT;
+    const pduRectY = (pduItem.y || 0) * constants.BASE_UNIT_HEIGHT;
+    const pduRectHeight = (pduItem.u || 0) * constants.BASE_UNIT_HEIGHT;
     return (
-        localX >= pduRectX && localX < pduRectX + pduRectWidth &&
-        localY >= 0 && localY < pduRectHeight
+        localX >= pduRectX && localX < pduRectX + pduRectWidth && // Horizontal check
+        localY >= pduRectY && localY < pduRectY + pduRectHeight // Vertical check
     );
 }
 

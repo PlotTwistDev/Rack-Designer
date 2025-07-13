@@ -355,7 +355,7 @@ export function drawRack() {
                     const railRight = railLeft + (constants.WORLD_WIDTH - (constants.BASE_UNIT_HEIGHT * 1.25 * 2));
                     const pduDrawWidth = constants.BASE_UNIT_HEIGHT * 0.75;
                     ghostX = xOffset + (item.side === 'left' ? railLeft : railRight - pduDrawWidth);
-                    ghostH = (state.racks[sel.rackIndex]?.heightU || 42) * constants.BASE_UNIT_HEIGHT;
+                    ghostH = item.u * constants.BASE_UNIT_HEIGHT;
                     ghostW = pduDrawWidth;
                 } else {
                     ghostX = xOffset + railLeft - eqPadding;

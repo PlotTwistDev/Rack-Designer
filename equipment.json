@@ -194,11 +194,24 @@
         "category": "Vertical PDUs",
         "items": [
             {
-                "label": "42U Vertical PDU",
-                "u": 0,
+                "label": "V-PDU (Full Height)",
                 "type": "v-pdu",
                 "stencil": "v-pdu-front",
                 "stencil_rear": "v-pdu-rear"
+            },
+            {
+                "label": "V-PDU (20U)",
+                "u": 20,
+                "type": "v-pdu",
+                "stencil": "v-pdu-20u-front",
+                "stencil_rear": "v-pdu-20u-rear"
+            },
+            {
+                "label": "V-PDU (10U)",
+                "u": 10,
+                "type": "v-pdu",
+                "stencil": "v-pdu-10u-front",
+                "stencil_rear": "v-pdu-10u-rear"
             }
         ]
     },

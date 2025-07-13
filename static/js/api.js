@@ -1,5 +1,3 @@
-// --- START OF FILE api.js ---
-
 import * as constants from './constants.js'; // Needed for DEFAULT_NOTE_OFFSET_X/Y
 import * as state from './state.js';
 
@@ -80,6 +78,25 @@ export async function fetchInitialData() {
         stencilsRes.json(),
         stencilsRearRes.json()
     ]);
+
+    // START MODIFICATION: Add new PDU types and rename the original.
+    // This is done here to keep data modifications close to the data source.
+    const pduCategory = equipmentData.find(cat => cat.category === "PDUs & Power");
+    if (pduCategory) {
+        const vPduItem = pduCategory.items.find(it => it.label === 'V-PDU' || it.label === 'V-PDU (Full Height)');
+        if (vPduItem) {
+            vPduItem.label = 'V-PDU (Full Height)';
+            // Note: We don't set a 'u' property, so it will be treated as full-height by default.
+        }
+        // Add new PDU types if they don't already exist.
+        if (!pduCategory.items.some(it => it.u === 20)) {
+            pduCategory.items.push({ label: "V-PDU (20U)", type: "v-pdu", u: 20, stencil: "v-pdu-20u-front", stencil_rear: "v-pdu-20u-rear" });
+        }
+        if (!pduCategory.items.some(it => it.u === 10)) {
+            pduCategory.items.push({ label: "V-PDU (10U)", type: "v-pdu", u: 10, stencil: "v-pdu-10u-front", stencil_rear: "v-pdu-10u-rear" });
+        }
+    }
+    // END MODIFICATION
 
     await Promise.all([
         loadStencils(stencilDefs, state.stencilCache),

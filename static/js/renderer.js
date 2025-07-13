@@ -314,7 +314,18 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
 
     const vpdus = rack.filter(it => it.type === 'v-pdu');
     const standardItems = rack.filter(it => it.type !== 'v-pdu');
-    const getPduWorldRect = (pdu) => { const drawWidth = constants.BASE_UNIT_HEIGHT * 0.75; const pduX = (pdu.side === 'left') ? railLeft : (railRight - drawWidth); return { x: pduX, y: 0, w: drawWidth, h: worldHeight }; };
+    /**
+     * Calculates the world coordinates and dimensions for a given PDU.
+     * @param {object} pdu The PDU item object.
+     * @returns {{x: number, y: number, w: number, h: number}} The rectangle for drawing.
+     */
+    const getPduWorldRect = (pdu) => {
+        const drawWidth = constants.BASE_UNIT_HEIGHT * 0.75;
+        const pduX = (pdu.side === 'left') ? railLeft : (railRight - drawWidth);
+        const pduY = (pdu.y || 0) * constants.BASE_UNIT_HEIGHT;
+        const pduH = (pdu.u || rackHeightU) * constants.BASE_UNIT_HEIGHT;
+        return { x: pduX, y: pduY, w: drawWidth, h: pduH };
+    };
 
     const drawRackBackPanel = () => {
         ctx.fillStyle = rackInnerColor;
