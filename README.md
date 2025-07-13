@@ -48,9 +48,13 @@ A versatile web application for designing and visualizing server rack layouts. T
 │       ├── ui.js          # DOM/UI updates & controls
 │       ├── utils.js       # Utility functions & hit testing
 │       └── main.js        # App initialization & startup
-├── server.py              # Backend server & API definitions
+├── app1.py                # Backend server & API definitions
 ├── requirements.txt       # Python dependencies
-└── README.md              # Project documentation
+├── README.md              # Project documentation
+├── equipment.json
+├── stencils.json
+├── stencils-rear.json
+└── README.md 
 ```
 ## 🛠️ Technologies Used
 
