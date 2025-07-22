@@ -2587,7 +2587,7 @@ export function updateInfoPanel() {
         delBtn.addEventListener('click', () => deleteSelectedItem()); // MODIFIED: Call deleteSelectedItem without args
         actionsDiv.appendChild(delBtn);
 
-        contentDiv.appendChild(contentDiv);
+        contentDiv.appendChild(actionsDiv);
         details.appendChild(contentDiv);
         infoPanelContent.appendChild(details);
     });
