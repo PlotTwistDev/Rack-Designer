@@ -27,8 +27,8 @@
                 "label": "2U Render Node",
                 "u": 2,
                 "type": "render",
-                "stencil": "server-2u",
-                "stencil_rear": "server-2u-rear"
+                "stencil": "rendernode-2u",
+                "stencil_rear": "rendernode-2u-rear"
             },
             {
                 "label": "4U AI/GPU Server",
