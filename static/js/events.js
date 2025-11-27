@@ -1348,6 +1348,18 @@ export const initEventListeners = () => {
     document.getElementById('zoom-1x').addEventListener('click', () => ui.setZoom(1.0));
     document.getElementById('zoom-2x').addEventListener('click', () => ui.setZoom(2.0));
     document.getElementById('rackSizeSelect').addEventListener('change', ui.updateRackSize);
+
+    // Custom rack size input - validate on input, apply on blur or Enter
+    const customSizeInput = document.getElementById('customSizeInput');
+    customSizeInput.addEventListener('input', ui.validateCustomRackSize);
+    customSizeInput.addEventListener('blur', ui.applyCustomRackSize);
+    customSizeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            ui.applyCustomRackSize();
+        }
+    });
+
     document.getElementById('add-rack-btn').addEventListener('click', ui.addNewRack);
     document.getElementById('prev-rack-btn').addEventListener('click', () => ui.switchRack('prev'));
     document.getElementById('next-rack-btn').addEventListener('click', () => ui.switchRack('next'));

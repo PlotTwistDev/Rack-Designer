@@ -1350,6 +1350,18 @@ export const initEventListeners = () => {
     document.getElementById('zoom-1x').addEventListener('click', () => ui.setZoom(1.0));
     document.getElementById('zoom-2x').addEventListener('click', () => ui.setZoom(2.0));
     document.getElementById('rackSizeSelect').addEventListener('change', ui.updateRackSize);
+
+    // Custom rack size input - validate on input, apply on blur or Enter
+    const customSizeInput = document.getElementById('customSizeInput');
+    customSizeInput.addEventListener('input', ui.validateCustomRackSize);
+    customSizeInput.addEventListener('blur', ui.applyCustomRackSize);
+    customSizeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            ui.applyCustomRackSize();
+        }
+    });
+
     document.getElementById('add-rack-btn').addEventListener('click', ui.addNewRack);
     document.getElementById('prev-rack-btn').addEventListener('click', () => ui.switchRack('prev'));
     document.getElementById('next-rack-btn').addEventListener('click', () => ui.switchRack('next'));
@@ -1598,7 +1610,19 @@ export function updateRackControlsUI() {
         deleteBtn.style.visibility = 'visible';
 
         if (state.racks[state.activeRackIndex] && state.racks[state.activeRackIndex].heightU) {
-            rackSizeSelect.value = state.racks[state.activeRackIndex].heightU;
+            const heightU = state.racks[state.activeRackIndex].heightU;
+            const standardSizes = [9, 12, 18, 24, 32, 42, 48];
+            const customContainer = document.getElementById('customSizeContainer');
+            const customInput = document.getElementById('customSizeInput');
+
+            if (standardSizes.includes(heightU)) {
+                rackSizeSelect.value = heightU;
+                customContainer.style.display = 'none';
+            } else {
+                rackSizeSelect.value = 'custom';
+                customContainer.style.display = 'block';
+                customInput.value = heightU;
+            }
         }
     }
 }
@@ -2152,11 +2176,75 @@ export function switchRack(direction) {
 
 export function updateRackSize() {
     if (state.activeRackIndex < 0) return;
-    const newSize = parseInt(document.getElementById('rackSizeSelect').value);
+    const selectEl = document.getElementById('rackSizeSelect');
+    const customContainer = document.getElementById('customSizeContainer');
+    const customInput = document.getElementById('customSizeInput');
+
+    if (selectEl.value === 'custom') {
+        customContainer.style.display = 'block';
+        customInput.focus();
+        return; // Don't update rack size yet - wait for custom input
+    }
+
+    customContainer.style.display = 'none';
+    const newSize = parseInt(selectEl.value);
     state.racks[state.activeRackIndex].heightU = newSize;
     drawRack();
     setZoom('fit');
     updateInfoPanel(); // Update info panel (e.g. if v-pdu is selected, its height will change)
+}
+
+// Single source of truth for rack size validation
+export function validateRackSize(value) {
+    const num = parseInt(value);
+    if (isNaN(num) || num < 1 || num > 100) {
+        return { valid: false, value: null, error: 'Size must be 1-100U' };
+    }
+    return { valid: true, value: num, error: null };
+}
+
+export function applyCustomRackSize() {
+    if (state.activeRackIndex < 0) return;
+    const input = document.getElementById('customSizeInput');
+    const errorSpan = document.getElementById('customSizeError');
+
+    const result = validateRackSize(input.value);
+
+    if (!result.valid) {
+        errorSpan.textContent = result.error;
+        input.classList.add('input-error-border');
+        return; // STOP - don't apply invalid value
+    }
+
+    // Clear error and apply
+    errorSpan.textContent = '';
+    input.classList.remove('input-error-border');
+    state.racks[state.activeRackIndex].heightU = result.value;
+    drawRack();
+    setZoom('fit');
+    updateInfoPanel();
+}
+
+// Validate custom input on change (real-time feedback)
+export function validateCustomRackSize() {
+    const input = document.getElementById('customSizeInput');
+    const errorSpan = document.getElementById('customSizeError');
+
+    if (input.value === '') {
+        errorSpan.textContent = '';
+        input.classList.remove('input-error-border');
+        return;
+    }
+
+    const result = validateRackSize(input.value);
+
+    if (!result.valid) {
+        errorSpan.textContent = result.error;
+        input.classList.add('input-error-border');
+    } else {
+        errorSpan.textContent = '';
+        input.classList.remove('input-error-border');
+    }
 }
 
 export function populateEquipmentList(categories) {
@@ -2349,15 +2437,42 @@ export function applyInitialTheme() {
 
 // Renamed from addNewRack to be more generic for creating a new rack instance
 export function createNewRackInstance() {
+    const selectEl = document.getElementById('rackSizeSelect');
+    let heightU = 42; // explicit default
+
+    if (selectEl.value === 'custom') {
+        const result = validateRackSize(document.getElementById('customSizeInput').value);
+        if (result.valid) {
+            heightU = result.value;
+        }
+        // If invalid, use explicit default 42U
+    } else {
+        heightU = parseInt(selectEl.value);
+    }
+
     return {
         id: Date.now(), // Unique ID for the rack
         name: `Rack ${state.racks.length + 1}`,
         equipment: [],
-        heightU: parseInt(document.getElementById('rackSizeSelect').value)
+        heightU: heightU
     };
 }
 
 export function addNewRack() {
+    // Validate custom size before creating rack
+    const selectEl = document.getElementById('rackSizeSelect');
+    if (selectEl.value === 'custom') {
+        const input = document.getElementById('customSizeInput');
+        const errorSpan = document.getElementById('customSizeError');
+        const result = validateRackSize(input.value);
+
+        if (!result.valid) {
+            errorSpan.textContent = result.error;
+            input.classList.add('input-error-border');
+            return; // Don't create rack with invalid size
+        }
+    }
+
     const newRack = createNewRackInstance();
     state.racks.push(newRack);
     state.setSelectedNotes([]);
