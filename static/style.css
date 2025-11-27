@@ -184,6 +184,39 @@ button:disabled {
     /* Added disabled text color */
 }
 
+/* Custom rack size input */
+#customSizeContainer {
+    margin-top: 0.5rem;
+}
+
+#customSizeInput {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color-input);
+    border-radius: 0.375rem;
+    background: var(--bg-input);
+    color: var(--text-color-primary);
+    font-size: 0.875rem;
+    box-sizing: border-box;
+}
+
+#customSizeInput:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-color-focus);
+    border-color: var(--accent-color-focus);
+}
+
+#customSizeInput.input-error-border {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.input-error {
+    display: block;
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
 
 #zoom-controls {
     display: grid;
