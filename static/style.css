@@ -879,7 +879,8 @@ details[open]>summary .arrow,
 }
 
 /* Load File List */
-#load-file-list {
+#load-file-list,
+#backup-file-list {
     max-height: 200px;
     overflow-y: auto;
     border: 1px solid var(--border-color);
@@ -888,13 +889,25 @@ details[open]>summary .arrow,
     background-color: var(--bg-input);
 }
 
-#load-file-list ul {
+#backup-file-list {
+    max-height: 140px;
+}
+
+.modal-subheading {
+    margin: 0.75rem 0 0.5rem;
+    color: var(--text-color-secondary);
+    font-size: 0.95rem;
+}
+
+#load-file-list ul,
+#backup-file-list ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-#load-file-list li {
+#load-file-list li,
+#backup-file-list li {
     padding: 0.75rem 1rem;
     cursor: pointer;
     border-bottom: 1px solid var(--border-color-item);
@@ -902,16 +915,19 @@ details[open]>summary .arrow,
     transition: background-color 0.15s;
 }
 
-#load-file-list li:last-child {
+#load-file-list li:last-child,
+#backup-file-list li:last-child {
     border-bottom: none;
 }
 
-#load-file-list li:hover {
+#load-file-list li:hover,
+#backup-file-list li:hover {
     background-color: var(--bg-item-hover);
 }
 
 /* *** MODIFIED/ENHANCED STYLES FOR SELECTED ITEM IN LOAD MODAL *** */
-#load-file-list li.selected {
+#load-file-list li.selected,
+#backup-file-list li.selected {
     background-color: var(--accent-color, #2196f3);
     /* Use a strong accent color */
     color: white;
@@ -927,7 +943,8 @@ details[open]>summary .arrow,
 }
 
 /* Ensure hover doesn't override selection visually */
-#load-file-list li.selected:hover {
+#load-file-list li.selected:hover,
+#backup-file-list li.selected:hover {
     background-color: var(--accent-color-hover, #1976d2);
     /* Slightly darker accent on hover */
     color: white;
@@ -958,13 +975,17 @@ details[open]>summary .arrow,
 
 /* Add to .action-button-group styling */
 #export-pdf-btn,
-#export-image-btn {
+#export-image-btn,
+#export-json-btn,
+#import-json-btn {
     background-color: var(--accent-color);
     color: white;
 }
 
 #export-pdf-btn:hover,
-#export-image-btn:hover {
+#export-image-btn:hover,
+#export-json-btn:hover,
+#import-json-btn:hover {
     background-color: var(--accent-color-focus);
 }
 

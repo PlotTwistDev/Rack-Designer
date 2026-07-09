@@ -378,6 +378,13 @@ const handleMouseDown = (e) => {
             if (!state.selectedItems.some(sel => sel.item === item)) {
                 state.setSelectedItems([clickedSelection]);
             }
+            if (item.type === 'shelf-item') {
+                // Existing shelf-item move/drop support is incomplete; select only
+                // rather than showing a drag ghost that cannot be committed.
+                drawRack();
+                ui.updateInfoPanel();
+                return;
+            }
             // Begin dragging
             state.setIsDraggingSelection(true);
 
@@ -1298,8 +1305,8 @@ export const initEventListeners = () => {
 
     // --- All Event Listeners ---
     canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove); // Moved from document for performance
-    canvas.addEventListener('mouseup', handleMouseUp);     // Moved from document for performance
+    canvas.addEventListener('mousemove', handleMouseMove); // Kept on canvas for marquee offset calculations
+    window.addEventListener('mouseup', handleMouseUp);     // Finish drags even if the pointer leaves the canvas
 
     canvas.addEventListener('wheel', handleWheel, { passive: false });
     canvas.addEventListener('dragover', e => e.preventDefault());
@@ -1418,6 +1425,7 @@ export const initEventListeners = () => {
     const loadModal = document.getElementById('load-modal'); // This is the overlay div
     document.getElementById('load-selected-btn').addEventListener('click', ui.handleLoadSelected);
     document.getElementById('delete-selected-btn').addEventListener('click', ui.handleDeleteSelected);
+    document.getElementById('restore-backup-btn').addEventListener('click', ui.handleRestoreBackup);
     document.getElementById('load-cancel-btn').addEventListener('click', ui.hideLoadModal);
     // MODIFIED: Robust modal closing logic - now uses 'mousedown' instead of 'click'
     loadModal.addEventListener('mousedown', (e) => {
@@ -1450,6 +1458,9 @@ export const initEventListeners = () => {
     // --- NEW: Export Buttons Listeners ---
     const exportPdfBtn = document.getElementById('export-pdf-btn');
     const exportImageBtn = document.getElementById('export-image-btn');
+    const exportJsonBtn = document.getElementById('export-json-btn');
+    const importJsonBtn = document.getElementById('import-json-btn');
+    const importJsonInput = document.getElementById('import-json-input');
     const exportImageModal = document.getElementById('export-image-modal');
 
     if (exportPdfBtn) {
@@ -1466,6 +1477,16 @@ export const initEventListeners = () => {
         document.getElementById('export-image-cancel-btn').addEventListener('click', ui.hideImageExportModal);
         exportImageModal.addEventListener('mousedown', (e) => { if (e.target === exportImageModal) ui.hideImageExportModal(); });
         console.log('Image export button listener attached.');
+    }
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener('click', ui.exportLayoutJson);
+    }
+    if (importJsonBtn && importJsonInput) {
+        importJsonBtn.addEventListener('click', () => importJsonInput.click());
+        importJsonInput.addEventListener('change', (e) => {
+            ui.importLayoutJson(e.target.files[0]);
+            e.target.value = '';
+        });
     }
     // ------------------------------------
 

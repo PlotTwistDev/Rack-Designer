@@ -1,0 +1,8 @@
+{
+  "name": "rack-designer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:js": "node --check static/js/api.js && node --check static/js/canvas.js && node --check static/js/constants.js && node --check static/js/events.js && node --check static/js/main.js && node --check static/js/renderer.js && node --check static/js/state.js && node --check static/js/ui.js && node --check static/js/utils.js"
+  }
+}

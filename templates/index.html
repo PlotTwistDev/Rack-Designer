@@ -57,6 +57,11 @@
                     <button id="export-pdf-btn">Export to PDF</button>
                     <button id="export-image-btn">Export to Image</button>
                 </div>
+                <div class="action-button-group">
+                    <button id="export-json-btn">Export JSON</button>
+                    <button id="import-json-btn">Import JSON</button>
+                    <input type="file" id="import-json-input" accept="application/json,.json" hidden>
+                </div>
             </div>
         </div>
     </aside>
@@ -170,9 +175,14 @@
                 <!-- Files will be dynamically loaded here -->
                 <p class="no-files-message">Loading layouts...</p>
             </div>
+            <h4 class="modal-subheading">Recent Backups</h4>
+            <div id="backup-file-list" class="custom-scrollbar">
+                <p class="no-files-message">Loading backups...</p>
+            </div>
             <div class="modal-actions">
                 <button id="load-cancel-btn" class="btn-secondary">Cancel</button>
                 <button id="delete-selected-btn" class="btn-secondary">Delete</button>
+                <button id="restore-backup-btn" class="btn-secondary" disabled>Restore Backup</button>
                 <button id="load-selected-btn" class="btn-primary" disabled>Load</button>
             </div>
         </div>

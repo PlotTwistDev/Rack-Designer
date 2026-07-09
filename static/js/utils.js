@@ -53,9 +53,13 @@ export function findCurrentParentOf(shelfItem) {
 }
 
 export function getMouseWorldPos(e) {
+    const canvas = document.getElementById('rackCanvas');
+    const rect = canvas?.getBoundingClientRect?.();
+    const canvasX = rect ? e.clientX - rect.left : e.offsetX;
+    const canvasY = rect ? e.clientY - rect.top : e.offsetY;
     return {
-        x: (e.offsetX - state.viewOffset.x) / state.scale,
-        y: (e.offsetY - state.viewOffset.y) / state.scale
+        x: (canvasX - state.viewOffset.x) / state.scale,
+        y: (canvasY - state.viewOffset.y) / state.scale
     };
 }
 
@@ -251,9 +255,13 @@ function deepCompareLayouts(layoutA, layoutB) {
         const rackA = stripTransientProperties(layoutA[i]);
         const rackB = stripTransientProperties(layoutB[i]);
 
-        // Compare equipment arrays for each rack separately
-        const equipmentA = layoutA[i].equipment;
-        const equipmentB = layoutB[i].equipment;
+        // Compare equipment arrays for each rack separately, then remove them
+        // before comparing rack metadata so transient item properties do not
+        // leak into the rack-level JSON.stringify comparison.
+        const equipmentA = rackA.equipment;
+        const equipmentB = rackB.equipment;
+        delete rackA.equipment;
+        delete rackB.equipment;
 
         if (!compareItemArrays(equipmentA, equipmentB)) {
             return false;

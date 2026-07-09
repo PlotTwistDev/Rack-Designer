@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local runtime data
+racks/
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/

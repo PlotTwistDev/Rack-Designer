@@ -6,18 +6,19 @@ async function loadStencils(stencilDefs, targetCache) {
     const promises = Object.keys(stencilDefs).map(key => {
         if (targetCache.has(key)) return Promise.resolve();
         return new Promise((resolve, reject) => {
+            const svg = stencilDefs[key];
+            if (typeof svg !== 'string' || !svg.trim().startsWith('<svg')) {
+                reject(new Error(`Invalid stencil data for ${key}`));
+                return;
+            }
+
             const img = new Image();
             img.onload = () => {
                 targetCache.set(key, img);
                 resolve();
             };
             img.onerror = reject;
-            try {
-                const svg = new Function('return `' + stencilDefs[key] + '`;')();
-                img.src = createSvgDataUrl(svg);
-            } catch (e) {
-                reject(e);
-            }
+            img.src = createSvgDataUrl(svg);
         });
     });
     return Promise.allSettled(promises);
@@ -29,7 +30,8 @@ async function loadStencils(stencilDefs, targetCache) {
  * @param {Array} savedData The raw data loaded from the server.
  * @returns {Array} Processed racks array.
  */
-function processLoadedRacks(savedData) {
+export function processLoadedRacks(savedData) {
+    savedData = extractRacksPayload(savedData);
     let loadedRacks = [];
     if (savedData && Array.isArray(savedData)) {
         // Check if it's the old single-rack format or new multi-rack format
@@ -63,6 +65,22 @@ function processLoadedRacks(savedData) {
  * Fetches all the initial static data for the application (equipment, stencils).
  * @returns {Promise<object>} A promise that resolves to an object containing the fetched data.
  */
+const LAYOUT_SCHEMA_VERSION = 1;
+
+export function buildLayoutDocument(racks = state.racks) {
+    return {
+        schemaVersion: LAYOUT_SCHEMA_VERSION,
+        racks: JSON.parse(JSON.stringify(racks))
+    };
+}
+
+function extractRacksPayload(savedData) {
+    if (savedData && Array.isArray(savedData.racks)) {
+        return savedData.racks;
+    }
+    return savedData;
+}
+
 export async function fetchInitialData() {
     const [equipmentRes, stencilsRes, stencilsRearRes] = await Promise.all([
         fetch('/api/equipment'),
@@ -150,7 +168,7 @@ export async function saveLayoutAs(filename) {
         const res = await fetch(`/save_layout/${encodeURIComponent(filename)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(state.racks)
+            body: JSON.stringify(buildLayoutDocument())
         });
         const msg = await res.json();
         if (!res.ok) {
@@ -224,6 +242,38 @@ export async function deleteLayout(filename) {
     } catch (err) {
         console.error(`Error deleting layout "${filename}".`, err);
         alert(`Failed to delete layout "${filename}".`);
+        return false;
+    }
+}
+
+export async function getAvailableBackups() {
+    try {
+        const res = await fetch('/api/backups');
+        if (!res.ok) {
+            console.error('Failed to fetch backups:', res.status, await res.json());
+            return [];
+        }
+        return await res.json();
+    } catch (err) {
+        console.error('Error fetching backups:', err);
+        return [];
+    }
+}
+
+export async function restoreBackup(backupName) {
+    try {
+        const res = await fetch(`/restore_backup/${encodeURIComponent(backupName)}`, { method: 'POST' });
+        const msg = await res.json();
+        if (!res.ok) {
+            console.error(`Failed to restore backup "${backupName}":`, msg.message);
+            alert(`Failed to restore backup: ${msg.message}`);
+            return false;
+        }
+        alert(msg.message || 'Backup restored successfully.');
+        return msg.layoutName || null;
+    } catch (err) {
+        console.error(`Error restoring backup "${backupName}".`, err);
+        alert('Failed to restore backup.');
         return false;
     }
 }

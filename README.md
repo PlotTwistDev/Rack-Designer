@@ -180,3 +180,49 @@ These controls are located in the left sidebar.
 | `Ctrl` + `S`            | Saves the current layout (or opens "Save As" if new). |
 | `Delete` / `Backspace`  | Deletes the currently selected equipment.             |
 | `Alt` + (Mouse Action)  | Activates note-specific selection and dragging.       |
+
+## 🔐 Recent hardening and maintenance updates
+
+The current update makes Rack Designer safer for local use and easier to maintain:
+
+-   Flask debug mode is now **off by default**. Enable it only for development with `FLASK_DEBUG=1`.
+-   The app binds to `127.0.0.1` by default.
+-   Mutating requests are protected with same-origin checks.
+-   Remote writes are blocked unless `RACK_DESIGNER_ALLOW_REMOTE=1` is explicitly set.
+-   Layout save/load now validates and sanitises layout data before writing or returning it.
+-   Layout filenames are constrained to safe names and kept inside the configured racks directory.
+-   Layout saves use atomic writes to reduce the chance of corrupt partial files.
+-   Stencils are stored as plain SVG strings; runtime `new Function(...)` evaluation has been removed.
+-   The selected-item info panel avoids unsafe HTML interpolation for user-editable values.
+-   Duplicated event-handling code has been removed from `ui.js`; event handling now lives in `events.js`.
+-   Unsaved-change comparison ignores transient UI/rendering internals more reliably.
+-   Rack resizing keeps equipment within valid rack bounds.
+-   Temporary render-context state is no longer written onto equipment objects.
+
+### Useful environment variables
+
+-   `FLASK_DEBUG=1` — enable Flask debug mode for local development.
+-   `RACK_DESIGNER_RACKS_DIR=/path/to/racks` — choose where named layout JSON files are stored.
+-   `RACK_DESIGNER_MAX_UPLOAD_BYTES=1000000` — set maximum layout payload size.
+-   `RACK_DESIGNER_ALLOW_REMOTE=1` — allow non-loopback access. Use only behind proper network controls.
+
+### Verification commands
+
+```bash
+python3 -m py_compile app1.py
+python3 - <<'PY'
+import json
+for path in ['equipment.json', 'stencils.json', 'stencils-rear.json']:
+    json.load(open(path))
+    print(path, 'ok')
+PY
+for f in static/js/*.js; do node --check "$f"; done
+```
+
+If `bandit` is installed:
+
+```bash
+bandit -q -r app1.py
+```
+
+For the detailed feature/update review and recommended roadmap, see [`docs/FEATURES_AND_ROADMAP.md`](docs/FEATURES_AND_ROADMAP.md).

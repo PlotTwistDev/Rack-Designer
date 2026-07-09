@@ -123,12 +123,7 @@ export function getNoteDrawingMetrics(item, itemRect, effectiveNoteOffset, fontS
         return { noteBox: null, lineCoords: null, textAlignment: 'left', textXOffset: 0, padding: 0 };
     }
 
-    let tempCtx;
-    if (!calculateOnly && item.__renderCtx) {
-        tempCtx = item.__renderCtx;
-    } else {
-        tempCtx = document.createElement('canvas').getContext('2d');
-    }
+    const tempCtx = document.createElement('canvas').getContext('2d');
 
     tempCtx.font = `${fontSize}px Inter, sans-serif`;
 
@@ -230,7 +225,6 @@ export function drawSingleRack(ctx, rackData, xOffset, isExportMode = false, cur
         if (forPdfExport || notes.trim() === '') return null;
 
         const originalAlpha = ctx.globalAlpha;
-        item.__renderCtx = ctx;
 
         let effectiveNoteOffset = item.noteOffset || { x: constants.DEFAULT_NOTE_OFFSET_X, y: constants.DEFAULT_NOTE_OFFSET_Y };
         const isCurrentNoteBeingDragged = state.isDraggingNote && state.draggedNoteItemInfo && state.draggedNoteItemInfo.item === item;
